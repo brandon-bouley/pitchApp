@@ -32,14 +32,4 @@
 4. **Social Feed**: Trending reviews, followed users’ activity.
 6. **Export**: Export review cards as stories on social media platforms like Instagram, Snapchat, and Facebook. (stretch goal).
 
----
-
-## Project Timeline
-**Deadline #1 (Due 3/25)**
-- [x] Proposal & README
-- [x] Slide deck (concept, tech stack, wireframes)
-- [x] GitHub repo setup with initial Kotlin project
-- [ ] Class presentation
-
----
  
