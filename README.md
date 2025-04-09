@@ -6,7 +6,7 @@
 
 ### **Database**
 - **PostgreSQL**: Relational database for structured storage of user profiles, reviews, song metadata, and social features (followers, likes).
-- **Tables**: `users`, `reviews`, `songs`, `followers`, etc.
+- **Tables**: `users`, `reviews`, `songs`, `followers`, etc..
 
 ### **API**
 - **Spotify API**: Access to 100M+ songs, albums, and artists for search, metadata, and recommendations.
