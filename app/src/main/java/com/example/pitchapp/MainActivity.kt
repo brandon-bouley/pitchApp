@@ -1,5 +1,5 @@
 package com.example.pitchapp
-
+import androidx.compose.runtime.livedata.observeAsState
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,75 +16,99 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pitchapp.data.model.MusicViewModel
-import com.example.pitchapp.data.model.ReviewViewModel
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import com.example.pitchapp.data.model.Album
-import com.example.pitchapp.data.model.Track
-import androidx.compose.runtime.livedata.observeAsState
-import com.example.pitchapp.data.GeniusApiService
-import com.example.pitchapp.data.local.PitchDatabase
+import com.example.pitchapp.data.model.Artist
 import com.example.pitchapp.data.remote.BuildApi
 import com.example.pitchapp.data.repository.MusicRepository
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.create
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModel
 
+class MusicViewModelFactory(
+    private val repository: MusicRepository
+) : ViewModelProvider.Factory {
 
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MusicViewModel::class.java)) {
+            return MusicViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val reccoApi = BuildApi
-        val database = PitchDatabase.getDatabase(applicationContext)
-        val reviewDao = database.reviewDao()
+        val api = BuildApi.api
+        val musicRepository = MusicRepository(api)
+        val factory = MusicViewModelFactory(musicRepository)
 
 
         setContent {
                 val navController = rememberNavController()
-                NavGraph(navController = navController)
+                NavGraph(navController = navController,factory=factory)
 
         }
     }
-    private fun createReccoApi(): GeniusApiService {
-        return Retrofit.Builder()
-            .baseUrl("https://api.genius.com/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create()
-    }
+
 }
 
 
 @Composable
-fun NavGraph(navController: NavHostController) {
+fun NavGraph(navController: NavHostController, factory: MusicViewModelFactory) {
+    val viewModel: MusicViewModel = viewModel(factory = factory)
+
     NavHost(navController = navController, startDestination = "search") {
         composable("search") {
-            SearchScreen(navController)
+            SearchScreen(navController, viewModel)
         }
         composable("results") {
-            ResultScreen(navController)
+            ResultScreen(navController, viewModel)
         }
     }
 }
 
 
 @Composable
-fun SearchScreen(navController: NavController, viewModel: MusicViewModel = viewModel()) {
+fun SearchScreen(navController: NavController, viewModel: MusicViewModel) {
     var query by remember { mutableStateOf("") }
-
+    var searchType by remember { mutableStateOf("artist") } // "artist" or "album"
+    val searchResults by viewModel.searchResults.observeAsState(emptyList())
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(text = "Search for tracks or Albums", style = MaterialTheme.typography.titleMedium)
+        Text("Select Search Type", style = MaterialTheme.typography.titleMedium)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Button(
+                onClick = { searchType = "artist" },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (searchType == "artist") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("Search Artists")
+            }
+
+            Button(
+                onClick = { searchType = "album" },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (searchType == "album") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("Search Albums")
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text("Search Query") },
+            label = { Text("Enter $searchType name") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -92,15 +116,25 @@ fun SearchScreen(navController: NavController, viewModel: MusicViewModel = viewM
 
         Button(
             onClick = {
-                viewModel.search(query)
-                navController.navigate("results")
+                if (searchType == "artist") {
+                    viewModel.searchArtists(query)
+                } else {
+                    viewModel.searchAlbums(query)
+                }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Search")
+            Text("Search $searchType")
+        }
+        LaunchedEffect(searchResults) {
+            if (searchResults.isNotEmpty()) {
+                println("navigating to results")
+                navController.navigate("results")
+            }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,12 +161,12 @@ fun ResultScreen(navController: NavController, viewModel: MusicViewModel = viewM
             }
         } else {
             LazyColumn(
-                contentPadding = padding,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(results) { item ->
                     when (item) {
-                        is Track -> TrackCard(track = item)
+                        is Artist -> TrackCard(track = item)
                         is Album -> AlbumCard(album = item)
                     }
                 }
@@ -142,14 +176,16 @@ fun ResultScreen(navController: NavController, viewModel: MusicViewModel = viewM
 }
 
 @Composable
-fun TrackCard(track: Track) {
+fun TrackCard(track: Artist) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("track: ${track.title}", style = MaterialTheme.typography.titleMedium)
-            Text("Artist: ${track.artist}", style = MaterialTheme.typography.bodyMedium)
+            Text("Artist: ${track.name}", style = MaterialTheme.typography.titleMedium)
+            Text("Profile: ${track.href}", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -158,11 +194,16 @@ fun TrackCard(track: Track) {
 fun AlbumCard(album: Album) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Album: ${album.name}", style = MaterialTheme.typography.titleMedium)
-            Text("Artist: ${album.artist}", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                "Artist(s): ${album.artists.joinToString { it.name }}",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

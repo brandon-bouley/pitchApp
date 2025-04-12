@@ -1,45 +1,35 @@
 package com.example.pitchapp.data.model
+import android.util.Log
 import androidx.lifecycle.*
 import com.example.pitchapp.data.repository.MusicRepository
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import com.example.pitchapp.data.repository.ReviewRepository
 
 class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
     private val _searchResults = MutableLiveData<List<Any>>()
     val searchResults: LiveData<List<Any>> = _searchResults
-
-    fun search(query: String) {
+    fun searchArtists(query: String) {
         viewModelScope.launch {
-            repository.searchMusic(query).observeForever {
-                _searchResults.postValue(it)
+            try {
+                Log.d("DEBUG", "searchAlbums called with query: $query")
+                val artistResult = repository.searchArtists(query)
+                Log.d("DEBUG", "Got artist result: $artistResult")
+                _searchResults.postValue(artistResult)
+            } catch (e: Exception) {
+                Log.e("DEBUG", "searchAlbums failed", e)
             }
         }
     }
-}
-class ReviewViewModel(private val reviewRepo: ReviewRepository) : ViewModel() {
 
-    private val _reviews = MutableStateFlow<List<Review>>(emptyList())
-    val reviews: StateFlow<List<Review>> = _reviews
-
-    fun loadReviews(itemId: String, itemType: String) {
+    fun searchAlbums(query: String) {
         viewModelScope.launch {
-            _reviews.value = reviewRepo.getReviewsForItem(itemId, itemType)
-        }
-    }
-
-    fun postReview(itemId: String, itemType: String, userName: String, text: String) {
-        viewModelScope.launch {
-            reviewRepo.addReview(
-                Review(
-                    itemId = itemId,
-                    itemType = itemType,
-                    userName = userName,
-                    reviewText = text
-                )
-            )
-            loadReviews(itemId, itemType) // reload
+            try {
+                Log.d("DEBUG", "searchAlbums called with query: $query")
+                val albumResult = repository.searchAlbums(query)
+                Log.d("DEBUG", "Got album result: $albumResult")
+                _searchResults.postValue(albumResult)
+            } catch (e: Exception) {
+                Log.e("DEBUG", "searchAlbums failed", e)
+            }
         }
     }
 }
