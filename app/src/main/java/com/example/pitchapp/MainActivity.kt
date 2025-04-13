@@ -15,15 +15,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.pitchapp.data.model.MusicViewModel
+import com.example.pitchapp.viewmodel.MusicViewModel
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Artist
 import com.example.pitchapp.data.remote.BuildApi
 import com.example.pitchapp.data.repository.MusicRepository
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import android.util.Log
+import com.example.pitchapp.data.local.PitchDatabase
+import com.example.pitchapp.data.model.UserPreference
+
 
 class MusicViewModelFactory(
     private val repository: MusicRepository
@@ -42,8 +47,29 @@ class MainActivity : ComponentActivity() {
         val api = BuildApi.api
         val musicRepository = MusicRepository(api)
         val factory = MusicViewModelFactory(musicRepository)
+            //test script starts
+        val db = PitchDatabase.getDatabase(applicationContext)
+        val userDao = db.userPreferenceDao()
 
+        lifecycleScope.launch {
+            // Insert sample data
+            val testUser = UserPreference(
+                username = "jane_doe",
+                name = "Jane Doe",
+                age = 30,
+                bio = "Music Enthusiast",
+                email = "jane@example.com",
+                darkMode = true,
+                ratedItems = listOf("album:001", "artist:xyz")
+            )
 
+            userDao.insertOrUpdatePreference(testUser)
+
+            // Retrieve and log the data
+            val loadedUser = userDao.getPreference("jane_doe")
+            Log.d("DB_TEST", "Loaded user: $loadedUser")
+        }
+        //test script ends
         setContent {
                 val navController = rememberNavController()
                 NavGraph(navController = navController,factory=factory)
@@ -162,12 +188,14 @@ fun ResultScreen(navController: NavController, viewModel: MusicViewModel = viewM
         } else {
             LazyColumn(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(padding)
             ) {
-                items(results) { item ->
-                    when (item) {
+                items(results.size) { index ->
+                    when (val item = results[index]) {
                         is Artist -> TrackCard(track = item)
                         is Album -> AlbumCard(album = item)
+                        else -> Text("Unknown item type")
                     }
                 }
             }
