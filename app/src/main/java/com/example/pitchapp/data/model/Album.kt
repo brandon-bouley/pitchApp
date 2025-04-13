@@ -10,7 +10,6 @@ data class Album(
     val totalTracks: Int,
     val href: String,
     val name: String,
-    val availableCountries: String?,
     val releaseDate: String?,
     val releaseDateFormat: String,
     val isrc: String?,

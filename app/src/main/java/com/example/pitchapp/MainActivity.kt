@@ -1,6 +1,7 @@
 package com.example.pitchapp
 import androidx.compose.runtime.livedata.observeAsState
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.navigation.compose.rememberNavController
@@ -24,6 +25,7 @@ import com.example.pitchapp.data.remote.BuildApi
 import com.example.pitchapp.data.repository.MusicRepository
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModel
+import androidx.navigation.compose.currentBackStackEntryAsState
 
 class MusicViewModelFactory(
     private val repository: MusicRepository
@@ -45,8 +47,8 @@ class MainActivity : ComponentActivity() {
 
 
         setContent {
-                val navController = rememberNavController()
-                NavGraph(navController = navController,factory=factory)
+            val navController = rememberNavController()
+            NavGraph(navController = navController,factory=factory)
 
         }
     }
@@ -56,7 +58,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NavGraph(navController: NavHostController, factory: MusicViewModelFactory) {
-    val viewModel: MusicViewModel = viewModel(factory = factory)
+
+    val viewModel: MusicViewModel = viewModel( factory = factory)
+
 
     NavHost(navController = navController, startDestination = "search") {
         composable("search") {
@@ -64,6 +68,12 @@ fun NavGraph(navController: NavHostController, factory: MusicViewModelFactory) {
         }
         composable("results") {
             ResultScreen(navController, viewModel)
+        }
+        composable("details/artist/{name}") {
+            ArtistDetailScreen(viewModel)
+        }
+        composable("details/album/{name}") {
+            AlbumDetailScreen(viewModel)
         }
     }
 }
@@ -127,6 +137,7 @@ fun SearchScreen(navController: NavController, viewModel: MusicViewModel) {
             Text("Search $searchType")
         }
         LaunchedEffect(searchResults) {
+            Log.d("NAVIGATION", "searchResults: $searchResults")
             if (searchResults.isNotEmpty()) {
                 println("navigating to results")
                 navController.navigate("results")
@@ -166,8 +177,15 @@ fun ResultScreen(navController: NavController, viewModel: MusicViewModel = viewM
             ) {
                 items(results) { item ->
                     when (item) {
-                        is Artist -> TrackCard(track = item)
-                        is Album -> AlbumCard(album = item)
+                        is Artist -> TrackCard(track = item) {
+                            println("item before selected artist: $item")
+                            viewModel.selectArtist(item)
+                            navController.navigate("details/artist/${item.name}")
+                        }
+                        is Album -> AlbumCard(album = item) {
+                            viewModel.selectAlbum(item)
+                            navController.navigate("details/album/${item.name}")
+                        }
                     }
                 }
             }
@@ -176,8 +194,9 @@ fun ResultScreen(navController: NavController, viewModel: MusicViewModel = viewM
 }
 
 @Composable
-fun TrackCard(track: Artist) {
+fun TrackCard(track: Artist, onClick: () -> Unit) {
     Card(
+        onClick = onClick,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -191,8 +210,9 @@ fun TrackCard(track: Artist) {
 }
 
 @Composable
-fun AlbumCard(album: Album) {
+fun AlbumCard(album: Album, onClick:()-> Unit) {
     Card(
+        onClick = onClick,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -204,6 +224,71 @@ fun AlbumCard(album: Album) {
                 "Artist(s): ${album.artists.joinToString { it.name }}",
                 style = MaterialTheme.typography.bodyMedium
             )
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArtistDetailScreen(viewModel: MusicViewModel) {
+    val artist by viewModel.selectedArtist.observeAsState()
+    println("artist: $artist")
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(artist?.name ?: "Artist Details", style = MaterialTheme.typography.titleLarge)
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            artist?.let {
+                Text("Name: ${it.name}", style = MaterialTheme.typography.titleMedium)
+                Text("Profile: ${it.href}", style = MaterialTheme.typography.bodyMedium)
+            } ?: Text("No artist data found", style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AlbumDetailScreen(viewModel: MusicViewModel) {
+    val album by viewModel.selectedAlbum.observeAsState()
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(album?.name ?: "Album Details", style = MaterialTheme.typography.titleLarge)
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            album?.let {
+                Text("Album Name: ${it.name}", style = MaterialTheme.typography.titleMedium)
+                Text("Album Type: ${it.albumType}", style = MaterialTheme.typography.bodyMedium)
+                Text("Artists: ${it.artists.joinToString { artist -> artist.name }}", style = MaterialTheme.typography.bodyMedium)
+                Text("Total Tracks: ${it.totalTracks}", style = MaterialTheme.typography.bodyMedium)
+                Text("Label: ${it.label}", style = MaterialTheme.typography.bodyMedium)
+                Text("Popularity: ${it.popularity}", style = MaterialTheme.typography.bodyMedium)
+                Text("Release Date: ${it.releaseDate ?: "Unknown"}", style = MaterialTheme.typography.bodyMedium)
+                Text("Release Format: ${it.releaseDateFormat}", style = MaterialTheme.typography.bodyMedium)
+                Text("ISRC: ${it.isrc ?: "N/A"}", style = MaterialTheme.typography.bodyMedium)
+                Text("EAN: ${it.ean ?: "N/A"}", style = MaterialTheme.typography.bodyMedium)
+                Text("UPC: ${it.upc ?: "N/A"}", style = MaterialTheme.typography.bodyMedium)
+                Text("Spotify Link: ${it.href}", style = MaterialTheme.typography.bodyMedium)
+            } ?: Text("No album data found", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

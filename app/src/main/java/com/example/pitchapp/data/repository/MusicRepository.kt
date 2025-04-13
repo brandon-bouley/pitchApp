@@ -7,11 +7,24 @@ import com.example.pitchapp.data.remote.ReccoBeatsApiService
 class MusicRepository(private val apiService: ReccoBeatsApiService) {
 
     suspend fun searchArtists(query: String): List<Artist> {
-        return apiService.searchArtists(query).content
+        return try {
+            val response = apiService.searchArtists(query)
+            Log.d("API_SUCCESS", "Artists fetched: ${response.content.size}")
+            response.content
+        } catch (e: Exception) {
+            Log.e("API_ERROR", "Artist fetch failed ${e.message}", e)
+            emptyList()
+        }
     }
 
     suspend fun searchAlbums(query: String): List<Album> {
-        Log.d("DEBUG", "Calling API for albums")
-        return apiService.searchAlbums(query).content
+         return try {
+             val response = apiService.searchAlbums(query)
+             Log.d("API_SUCCESS", "Albums fetched: ${response.content.size}")
+             response.content
+         } catch (e: Exception) {
+             Log.e("API_ERROR", "Album fetch failed ${e.message}", e)
+             emptyList()
+         }
     }
 }

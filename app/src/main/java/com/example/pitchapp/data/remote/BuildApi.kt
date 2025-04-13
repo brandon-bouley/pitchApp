@@ -18,7 +18,6 @@ object BuildApi {
 
             val response = chain.proceed(request)
 
-            // 👇 Log raw JSON response
             val rawJson = response.peekBody(Long.MAX_VALUE).string()
             Log.d("API_RESPONSE", "Response JSON: $rawJson")
 
