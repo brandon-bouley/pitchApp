@@ -1,4 +1,4 @@
-package com.example.pitchapp.data.model
+package com.example.pitchapp.viewmodel
 import android.util.Log
 import androidx.lifecycle.*
 import com.example.pitchapp.data.repository.MusicRepository
