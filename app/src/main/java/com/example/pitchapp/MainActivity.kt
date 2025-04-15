@@ -1,7 +1,6 @@
 package com.example.pitchapp
 import androidx.compose.runtime.livedata.observeAsState
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.navigation.compose.rememberNavController
@@ -25,7 +24,12 @@ import com.example.pitchapp.data.remote.BuildApi
 import com.example.pitchapp.data.repository.MusicRepository
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModel
-import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import android.util.Log
+import com.example.pitchapp.data.local.PitchDatabase
+import com.example.pitchapp.data.model.UserPreference
+
 
 class MusicViewModelFactory(
     private val repository: MusicRepository
@@ -44,11 +48,32 @@ class MainActivity : ComponentActivity() {
         val api = BuildApi.api
         val musicRepository = MusicRepository(api)
         val factory = MusicViewModelFactory(musicRepository)
+            //test script starts
+        val db = PitchDatabase.getDatabase(applicationContext)
+        val userDao = db.userPreferenceDao()
 
+        lifecycleScope.launch {
+            // Insert sample data
+            val testUser = UserPreference(
+                username = "jane_doe",
+                name = "Jane Doe",
+                age = 30,
+                bio = "Music Enthusiast",
+                email = "jane@example.com",
+                darkMode = true,
+                ratedItems = listOf("album:001", "artist:xyz")
+            )
 
+            userDao.insertOrUpdatePreference(testUser)
+
+            // Retrieve and log the data
+            val loadedUser = userDao.getPreference("jane_doe")
+            Log.d("DB_TEST", "Loaded user: $loadedUser")
+        }
+        //test script ends
         setContent {
-            val navController = rememberNavController()
-            NavGraph(navController = navController,factory=factory)
+                val navController = rememberNavController()
+                NavGraph(navController = navController,factory=factory)
 
         }
     }
@@ -58,9 +83,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NavGraph(navController: NavHostController, factory: MusicViewModelFactory) {
-
-    val viewModel: MusicViewModel = viewModel( factory = factory)
-
+    val viewModel: MusicViewModel = viewModel(factory = factory)
 
     NavHost(navController = navController, startDestination = "search") {
         composable("search") {
@@ -137,7 +160,6 @@ fun SearchScreen(navController: NavController, viewModel: MusicViewModel) {
             Text("Search $searchType")
         }
         LaunchedEffect(searchResults) {
-            Log.d("NAVIGATION", "searchResults: $searchResults")
             if (searchResults.isNotEmpty()) {
                 println("navigating to results")
                 navController.navigate("results")
