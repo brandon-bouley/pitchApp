@@ -17,5 +17,13 @@ data class Album(
     val upc: String?,
     val label: String,
     val popularity: Int
-)
+) {
+    val formattedReleaseDate: String
+        get() = when (releaseDateFormat) {
+            "day" -> releaseDate?.take(10) ?: "Unknown"
+            "month" -> releaseDate?.take(7) ?: "Unknown"
+            "year" -> releaseDate?.take(4) ?: "Unknown"
+            else -> "Unknown"
+        }
+}
 
