@@ -9,14 +9,17 @@ import com.example.pitchapp.data.model.Review
 import com.example.pitchapp.data.model.UserConverters
 import com.example.pitchapp.data.model.UserPreference
 
-@Database(entities = [Review::class, UserPreference::class], version = 1, exportSchema = false)
+@Database(entities = [Review::class, UserPreference::class], version = 3, exportSchema = false)
 @TypeConverters(UserConverters::class)
 abstract class PitchDatabase : RoomDatabase() {
+    abstract fun reviewDao(): ReviewDao
     abstract fun userPreferenceDao(): UserPreferenceDao
 
     companion object {
         @Volatile
         private var INSTANCE: PitchDatabase? = null
+
+
 
         fun getDatabase(context: Context): PitchDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -24,7 +27,9 @@ abstract class PitchDatabase : RoomDatabase() {
                     context.applicationContext,
                     PitchDatabase::class.java,
                     "pitch_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

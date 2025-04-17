@@ -3,6 +3,8 @@ import android.util.Log
 import androidx.lifecycle.*
 import com.example.pitchapp.data.repository.MusicRepository
 import kotlinx.coroutines.launch
+import com.example.pitchapp.data.model.Artist
+import com.example.pitchapp.data.model.Album
 
 class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
     private val _searchResults = MutableLiveData<List<Any>>()

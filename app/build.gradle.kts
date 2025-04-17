@@ -24,6 +24,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -45,9 +46,16 @@ android {
 
 dependencies {
 
+    implementation("androidx.compose.material3:material3-window-size-class:1.1.1")
+
+
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0")
     implementation("androidx.room:room-ktx:2.6.1")
+    implementation(libs.places)
+    implementation(libs.androidx.navigation.safe.args.generator){
+        exclude(group = "xmlpull", module = "xmlpull")
+    }
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
