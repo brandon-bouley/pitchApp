@@ -18,21 +18,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Artist
+import com.example.pitchapp.data.model.FeedItem
+import com.example.pitchapp.ui.components.AlbumCard
 import com.example.pitchapp.viewmodel.SearchViewModel
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultScreen(navController: NavController, viewModel: SearchViewModel = viewModel()) {
     val searchState by viewModel.searchState.collectAsState()
     val results = searchState.results
-
 
     Scaffold(
         topBar = {
@@ -60,45 +60,16 @@ fun ResultScreen(navController: NavController, viewModel: SearchViewModel = view
             ) {
                 items(results.size) { index ->
                     when (val item = results[index]) {
-                        is Artist -> TrackCard(track = item)
-                        is Album -> AlbumCard(album = item)
+                        is Album -> AlbumCard(
+                            albumItem = FeedItem.AlbumItem(item),
+                            onClick = {
+                                navController.navigate("album/${item.id}")
+                            }
+                        )
                         else -> Text("Unknown item type")
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun TrackCard(track: Artist) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Artist: ${track.name}", style = MaterialTheme.typography.titleMedium)
-            Text("Profile: ${track.href}", style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
-fun AlbumCard(album: Album) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Album: ${album.name}", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Artist(s): ${album.artists.joinToString { it.name }}",
-                style = MaterialTheme.typography.bodyMedium
-            )
         }
     }
 }

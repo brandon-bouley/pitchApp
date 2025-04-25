@@ -27,12 +27,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Button
 import androidx.navigation.NavController
 import com.example.pitchapp.data.model.Artist
 import com.example.pitchapp.ui.components.ErrorMessage
 import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.viewmodel.SearchViewModel
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
@@ -40,6 +43,19 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.ui.platform.LocalContext
 import com.example.pitchapp.data.model.Album
+import com.example.pitchapp.data.model.FeedItem
+import com.example.pitchapp.data.model.Review
+import com.example.pitchapp.data.repository.MusicRepository
+import com.example.pitchapp.ui.components.AlbumCard
+import com.example.pitchapp.ui.components.ReviewCard
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.LaunchedEffect
+
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
@@ -48,13 +64,17 @@ fun SearchScreen(
     viewModel: SearchViewModel,
 ) {
     val context = LocalContext.current
-    val windowSizeClass = if (context is Activity) {
-        calculateWindowSizeClass(context)
-    } else {
-        throw IllegalStateException("Context is not an Activity")
+    val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
+    val isCompactLayout = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
+    val navAlbumId by viewModel.navigationAlbumId
+
+    LaunchedEffect(navAlbumId) {
+        navAlbumId?.let { id ->
+            navController.navigate(Screen.AlbumDetail.createRoute(id))
+            viewModel.clearNavigation()
+        }
     }
 
-    val isCompactLayout = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
 
     if (isCompactLayout) {
         CompactSearchLayout(navController, viewModel)
@@ -66,7 +86,6 @@ fun SearchScreen(
 @Composable
 private fun CompactSearchLayout(navController: NavController, viewModel: SearchViewModel) {
     Column(Modifier.fillMaxSize()) {
-        // Existing phone layout
         SearchContent(navController, viewModel)
     }
 }
@@ -77,14 +96,9 @@ private fun ExpandedSearchLayout(
     viewModel: SearchViewModel
 ) {
     Row(Modifier.fillMaxSize()) {
-        // Left panel (40% width)
-        Column(
-            Modifier
-                .weight(0.4f)
-                .padding(end = 8.dp)
-        ) {
+        Column(Modifier.weight(0.4f)) {
             SearchContent(
-                navController = null,
+                navController = navController,
                 viewModel = viewModel,
                 onAlbumSelected = { album ->
                     viewModel.selectAlbum(album)
@@ -93,45 +107,27 @@ private fun ExpandedSearchLayout(
             )
         }
 
-        // Right panel (60% width)
-        Column(
-            Modifier
-                .weight(0.6f)
-                .padding(start = 8.dp)
-        ) {
-            DetailPane(navController, viewModel) // Pass navController here
+        Column(Modifier.weight(0.6f)) {
+            DetailPane(viewModel)
         }
     }
 }
 
 @Composable
 private fun SearchContent(
-    navController: NavController?,
+    navController: NavController,
     viewModel: SearchViewModel,
     onAlbumSelected: (Album) -> Unit = { album ->
-        navController?.navigate(Screen.AlbumDetail.createRoute(album.id))
+        viewModel.handleAlbumSelection(album.artist, album.title)
     }
 ) {
     val searchState by viewModel.searchState.collectAsState()
-    val selectedArtist by viewModel.selectedArtist.collectAsState()
-    val artistAlbums by viewModel.artistAlbums.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
 
     Column(Modifier.fillMaxSize()) {
-        if (searchState.searchPhase == SearchViewModel.SearchPhase.ALBUM_SEARCH) {
-            IconButton(
-                onClick = { viewModel.resetSearch() },
-                modifier = Modifier.align(Alignment.Start)
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back to artist search")
-            }
-        }
-
         SearchField(
-            query = searchQuery,
+            query = searchState.searchQuery,
             onQueryChange = viewModel::updateSearchQuery,
-            searchPhase = searchState.searchPhase,
-            selectedArtist = selectedArtist
+            searchType = searchState.searchType
         )
 
         Spacer(Modifier.height(8.dp))
@@ -144,17 +140,20 @@ private fun SearchContent(
                 message = searchState.error!!,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
-            searchState.searchPhase == SearchViewModel.SearchPhase.ARTIST_SEARCH -> {
-                ArtistResultsList(
+            else -> when (searchState.searchType) {
+                SearchViewModel.SearchType.ARTIST -> ArtistResultsList(
                     results = searchState.results.filterIsInstance<Artist>(),
-                    onSelect = { viewModel.selectArtist(it) },
+                    onSelect = { artist ->
+                        viewModel.getArtistTopAlbums(artist.name)
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-            searchState.searchPhase == SearchViewModel.SearchPhase.ALBUM_SEARCH -> {
-                AlbumResultsList(
-                    albums = artistAlbums,
-                    onSelect = onAlbumSelected,
+                SearchViewModel.SearchType.ALBUM -> AlbumResultsList(
+                    albums = searchState.results.filterIsInstance<Album>(),
+                    onSelect = { album ->
+                        // Use both artist and title from API result
+                        viewModel.handleAlbumSelection(album.artist, album.title)
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -164,35 +163,30 @@ private fun SearchContent(
 
 @Composable
 private fun DetailPane(
-    navController: NavController,
     viewModel: SearchViewModel
 ) {
-    val albumDetails by viewModel.albumDetails
-    val reviews by viewModel.reviews
-    val isLoading by viewModel.isLoading
-    val error by viewModel.error
+    val searchState by viewModel.searchState.collectAsState()
 
     Box(Modifier.fillMaxSize()) {
         when {
-            isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-            error != null -> ErrorMessage(
-                message = error ?: "Unknown error",
+            searchState.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+            searchState.error != null -> ErrorMessage(
+                message = searchState.error!!,
                 modifier = Modifier.align(Alignment.Center)
             )
-            albumDetails != null -> {
+            searchState.selectedAlbumDetails != null -> {
+                val (album, reviews) = searchState.selectedAlbumDetails!!
                 Column(Modifier.fillMaxSize()) {
                     AlbumDetailContent(
-                        album = albumDetails!!,
-                        reviews = reviews
-                    )
+                        album = album,
+                        reviews = reviews,
+                        modifier = Modifier.weight(1f),
+                        viewModel = viewModel)
 
-                    // Add the review button here
-                    Button(
-                        onClick = {
-                            navController.navigate(
-                                Screen.AddReview.createRoute(albumDetails!!.id)
-                            )
-                        },
+                                Button(
+                                onClick = {
+                                    viewModel.handleAlbumSelection(album.artist, album.title)
+                                },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
@@ -210,36 +204,78 @@ private fun DetailPane(
     }
 }
 
-
 @Composable
 fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
-    searchPhase: SearchViewModel.SearchPhase,
-    selectedArtist: Artist?
+    searchType: SearchViewModel.SearchType
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        when (searchPhase) {
-            SearchViewModel.SearchPhase.ARTIST_SEARCH -> {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    label = { Text("Search artists") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Search
-                    ),
-                    singleLine = true
-                )
-            }
-            SearchViewModel.SearchPhase.ALBUM_SEARCH -> {
-                Text(
-                    text = "Albums by: ${selectedArtist?.name ?: ""}",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(vertical = 8.dp)
+    Column(Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            label = { Text(when (searchType) {
+                SearchViewModel.SearchType.ARTIST -> "Search artists"
+                SearchViewModel.SearchType.ALBUM -> "Search albums"
+            })},
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Search
+            ),
+            singleLine = true
+        )
+    }
+}
+
+@Composable
+fun AlbumDetailContent(
+    album: Album,
+    reviews: List<Review>,
+    modifier: Modifier = Modifier,
+    viewModel: SearchViewModel
+) {
+    Column(modifier.padding(16.dp)) {
+        Text(album.title, style = MaterialTheme.typography.headlineSmall)
+        Text(album.artist, style = MaterialTheme.typography.titleMedium)
+
+        Spacer(Modifier.height(16.dp))
+
+        NetworkImage(
+            url = album.artworkUrl,
+            modifier = Modifier
+                .size(200.dp)
+                .align(Alignment.CenterHorizontally)
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        Text("Reviews (${reviews.size})", style = MaterialTheme.typography.titleMedium)
+
+        LazyColumn {
+            items(reviews) { review ->
+                ReviewCard(
+                    reviewItem = FeedItem.ReviewItem(review, album),
+                    onClick = { viewModel.handleAlbumSelection(album.artist, album.title) }
                 )
             }
         }
     }
+}
+
+@Composable
+fun NetworkImage(
+    url: String,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Fit
+) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(url)
+            .crossfade(true)
+            .build(),
+        contentDescription = null,
+        modifier = modifier,
+        contentScale = contentScale
+    )
 }
