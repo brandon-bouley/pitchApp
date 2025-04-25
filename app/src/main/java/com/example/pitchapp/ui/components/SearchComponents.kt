@@ -54,7 +54,7 @@ private fun ArtistItem(
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(artist.name, style = MaterialTheme.typography.titleMedium)
-            Text("ID: ${artist.id}", style = MaterialTheme.typography.bodySmall)
+
         }
     }
 }
@@ -73,9 +73,9 @@ private fun AlbumItem(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
-            Text(album.name, style = MaterialTheme.typography.titleMedium)
-            Text("Release: ${album.formattedReleaseDate}")
-            Text("Label: ${album.label}")
+            Text(album.title, style = MaterialTheme.typography.titleMedium)
+//            Text("Released: ${album.wiki?.published}")
+
         }
     }
 }

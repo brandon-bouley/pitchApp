@@ -32,7 +32,6 @@ fun AlbumSearchField(
     onAlbumSelected: (Album) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val searchQuery by viewModel.searchQuery.collectAsState()
     val searchState by viewModel.searchState.collectAsState()
     val selectedArtist by viewModel.selectedArtist.collectAsState()
     val artistAlbums by viewModel.artistAlbums.collectAsState()
@@ -40,7 +39,7 @@ fun AlbumSearchField(
     Column(modifier = modifier) {
         if (selectedArtist == null) {
             OutlinedTextField(
-                value = searchQuery,
+                value = searchState.searchQuery,
                 onValueChange = { newQuery ->
                     viewModel.setSearchType(SearchViewModel.SearchType.ARTIST)
                     viewModel.updateSearchQuery(newQuery)
