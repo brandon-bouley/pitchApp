@@ -137,9 +137,7 @@ private fun SearchContent(
         Spacer(Modifier.height(8.dp))
 
         when {
-            searchState.isLoading -> CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
+            searchState.isLoading -> SpinningRecord()
             searchState.error != null -> ErrorMessage(
                 message = searchState.error!!,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -174,7 +172,7 @@ private fun DetailPane(
 
     Box(Modifier.fillMaxSize()) {
         when {
-            isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+            isLoading -> SpinningRecord()
             error != null -> ErrorMessage(
                 message = error ?: "Unknown error",
                 modifier = Modifier.align(Alignment.Center)

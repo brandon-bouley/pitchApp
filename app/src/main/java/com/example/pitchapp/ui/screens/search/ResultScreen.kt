@@ -26,6 +26,43 @@ import androidx.navigation.NavController
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Artist
 import com.example.pitchapp.viewmodel.SearchViewModel
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.painterResource
+import com.example.pitchapp.R
+
+@Composable
+fun SpinningRecord() {
+    // Infinite rotation animation
+    val infiniteTransition = rememberInfiniteTransition()
+
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        )
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.record_icon),
+            contentDescription = "Spinning Record",
+            modifier = Modifier
+                .rotate(angle)
+                .size(100.dp),
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,10 +110,14 @@ fun ResultScreen(navController: NavController, viewModel: SearchViewModel = view
 @Composable
 fun TrackCard(track: Artist) {
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
+            .padding(horizontal = 8.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Artist: ${track.name}", style = MaterialTheme.typography.titleMedium)
@@ -88,6 +129,10 @@ fun TrackCard(track: Artist) {
 @Composable
 fun AlbumCard(album: Album) {
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier
             .fillMaxWidth()

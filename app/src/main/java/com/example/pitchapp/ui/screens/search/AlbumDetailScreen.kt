@@ -70,7 +70,7 @@ fun AlbumDetailScreen(
     ) {
 
         when {
-            viewModel.isLoading.value -> CircularProgressIndicator()
+            viewModel.isLoading.value -> SpinningRecord()
             viewModel.error.value != null -> ErrorMessage(
                 message = viewModel.error.value!!,
                 modifier = Modifier.fillMaxSize()
@@ -82,7 +82,6 @@ fun AlbumDetailScreen(
                         album = viewModel.albumDetails.value!!,
                         reviews = viewModel.reviews.value
                     )
-
 
                     Button(
                         onClick = {

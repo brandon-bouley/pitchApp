@@ -19,6 +19,7 @@ import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.ui.components.AlbumSearchField
 import com.example.pitchapp.viewmodel.ReviewViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.SearchViewModel
 
 @Composable
@@ -86,7 +87,7 @@ fun AddReviewScreen(
                 enabled = uiState.isFormValid && !uiState.isSubmitting,
                 modifier = Modifier.align(Alignment.End)
             ) {
-                if (uiState.isSubmitting) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                if (uiState.isSubmitting) SpinningRecord()
                 else Text("Submit Review")
             }
 

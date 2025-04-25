@@ -20,10 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.pitchapp.R
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Artist
+import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.SearchViewModel
 
 @Composable
@@ -58,7 +60,7 @@ fun AlbumSearchField(
 
             when {
                 searchState.isLoading ->
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    SpinningRecord()
 
                 searchState.error != null ->
                     ErrorMessage(
@@ -89,8 +91,10 @@ fun AlbumSearchField(
 
                 Text(
                     text = "Albums by ${selectedArtist!!.name}",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f)
+
                 )
             }
 
@@ -98,7 +102,7 @@ fun AlbumSearchField(
 
             when {
                 searchState.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    SpinningRecord()
                 }
 
                 searchState.error != null -> {

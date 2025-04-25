@@ -27,6 +27,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import android.util.Log
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +41,7 @@ import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ProfileViewModel
 import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
+import com.example.pitchapp.ui.theme.PitchAppTheme
 
 class ProfileViewModelFactory(
     private val userPrefDao: UserPreferenceDao,
@@ -132,28 +134,20 @@ class MainActivity : ComponentActivity() {
         val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
         val albumDetailViewModelFactory = AlbumDetailViewModelFactory(musicRepository, reviewRepository)
 
+
+
         setContent {
-            PitchAppTheme {
                 MainApp(
                     feedViewModelFactory = feedViewModelFactory,
                     reviewViewModelFactory = reviewViewModelFactory,
                     searchViewModelFactory = searchViewModelFactory,
                     albumDetailViewModelFactory = albumDetailViewModelFactory
                 )
-            }
+
         }
     }
 }
 
-@Composable
-fun PitchAppTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = Color(0xFFA3C1D3)
-        ),
-        content = content
-    )
-}
 
 
 

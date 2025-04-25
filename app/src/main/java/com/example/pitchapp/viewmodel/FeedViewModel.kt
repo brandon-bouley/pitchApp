@@ -23,15 +23,16 @@ class FeedViewModel(
         viewModelScope.launch {
             _feedState.value = FeedState.Loading
             try {
-                val recentReviews = feedRepository.getRecentReviewItems()
                 val popularAlbums = feedRepository.getPopularAlbumsFromReviews()
+                val recentReviews = feedRepository.getRecentReviewItems()
+
 
                 _feedState.value = FeedState.Success(
                     listOf(
-                        FeedItem.SectionHeader("Recent Reviews"),
-                        *recentReviews.toTypedArray(),
                         FeedItem.SectionHeader("Popular Albums"),
-                        *popularAlbums.toTypedArray()
+                        *popularAlbums.toTypedArray(),
+                        FeedItem.SectionHeader("Recent Reviews"),
+                        *recentReviews.toTypedArray()
                     )
                 )
             } catch (e: Exception) {

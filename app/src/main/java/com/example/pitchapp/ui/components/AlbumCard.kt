@@ -1,7 +1,9 @@
 package com.example.pitchapp.ui.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Star
@@ -19,7 +21,17 @@ import com.example.pitchapp.data.model.FeedItem
 
 @Composable
 fun AlbumCard(albumItem: FeedItem.AlbumItem, onClick: () -> Unit) {
-    Card(onClick = onClick) {
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
+    ){
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxSize()
+    ) {
         Column(Modifier.padding(16.dp)) {
             Text(albumItem.album.name, style = MaterialTheme.typography.headlineSmall)
             Text("★ ${"%.1f".format(albumItem.averageRating)}")
@@ -27,6 +39,7 @@ fun AlbumCard(albumItem: FeedItem.AlbumItem, onClick: () -> Unit) {
             Text("By ${albumItem.album.artists.joinToString { it.name }}")
         }
     }
+}
 }
 
 private fun Float.roundToDecimals(decimals: Int): String {

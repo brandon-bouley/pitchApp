@@ -1,5 +1,16 @@
 package com.example.pitchapp.ui.navigation
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
@@ -13,7 +24,19 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.example.pitchapp.R
+import com.example.pitchapp.ui.components.ThemeToggle
 
 
 sealed class Screen(val route: String) {
@@ -40,7 +63,9 @@ sealed class Screen(val route: String) {
 
 @Composable
 fun BottomNavBar(navController: NavController) {
-    NavigationBar {
+    NavigationBar (
+        tonalElevation = 8.dp
+    ){
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
 
@@ -86,3 +111,37 @@ private data class NavItem(
     val icon: ImageVector,
     val label: String
 )
+@Composable
+fun LogoHeader(
+    darkTheme: Boolean,
+    onToggle: (Boolean) -> Unit
+
+) {
+
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 4.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "App Logo",
+                modifier = Modifier
+                    .height(80.dp)
+                    .fillMaxWidth(),
+                contentScale = ContentScale.Fit
+
+            )
+
+            ThemeToggle(
+                isDarkTheme = darkTheme,
+                onToggle = onToggle,
+            )
+        }
+    }
+}
