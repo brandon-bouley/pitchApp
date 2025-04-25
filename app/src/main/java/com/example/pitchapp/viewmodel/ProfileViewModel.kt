@@ -1,31 +1,55 @@
 package com.example.pitchapp.viewmodel
 
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.pitchapp.data.local.UserPreferenceDao
+import com.example.pitchapp.data.model.Profile
+import com.example.pitchapp.data.model.Result
 import com.example.pitchapp.data.model.Review
-import com.example.pitchapp.data.model.UserPreference
-import com.example.pitchapp.data.repository.ReviewRepository
+import com.example.pitchapp.data.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
-    private val userPrefDao: UserPreferenceDao,
-    private val reviewRepo: ReviewRepository
+    private val repository: ProfileRepository
+
 ) : ViewModel() {
 
-    private val _user = MutableStateFlow<UserPreference?>(null)
-    val user: StateFlow<UserPreference?> = _user.asStateFlow()
+    private val _profileState = MutableStateFlow<ProfileState>(ProfileState.Loading)
+    val profileState: StateFlow<ProfileState> = _profileState
 
-    private val _reviews = MutableStateFlow<List<Review>>(emptyList())
-    val reviews: StateFlow<List<Review>> = _reviews.asStateFlow()
-
-    fun loadProfile(username: String) {
+    fun loadProfile(userId: String) {
         viewModelScope.launch {
-            _user.value    = userPrefDao.getPreference(username)
-            _reviews.value = reviewRepo.getReviewsByUser(username)
+            _profileState.value = ProfileState.Loading
+            try {
+                val profile = repository.getProfile(userId)
+                _profileState.value = ProfileState.Success(profile)
+            } catch (e: Exception) {
+                _profileState.value = ProfileState.Error(
+                    message = e.message ?: "Failed to load profile"
+                )
+            }
         }
+    }
+
+    fun refreshProfile(userId: String) {
+        viewModelScope.launch {
+            try {
+                repository.updateProfileStats(userId)
+                loadProfile(userId)
+            } catch (e: Exception) {
+                _profileState.value = ProfileState.Error("Failed to refresh: ${e.message}")
+            }
+        }
+    }
+
+    sealed class ProfileState {
+        data object Loading : ProfileState()
+        data class Success(val profile: Profile) : ProfileState()
+        data class Error(val message: String) : ProfileState()
     }
 }

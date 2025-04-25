@@ -9,7 +9,6 @@ sealed class FeedItem {
     data class AlbumItem(
         val album: Album,
         val averageRating: Float = 0f,
-        val popularity: Int
     ) : FeedItem()
 
     data class SectionHeader(val title: String) : FeedItem()

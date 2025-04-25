@@ -15,35 +15,41 @@ class FeedViewModel(
     private val _feedState = MutableStateFlow<FeedState>(FeedState.Loading)
     val feedState: StateFlow<FeedState> = _feedState.asStateFlow()
 
-    init {
-        loadFeed()
-    }
-
     fun loadFeed() {
         viewModelScope.launch {
             _feedState.value = FeedState.Loading
             try {
-                val popularAlbums = feedRepository.getPopularAlbumsFromReviews()
-                val recentReviews = feedRepository.getRecentReviewItems()
+
+                val recentResult = feedRepository.getRecentReviewItems()
+                val popularResult = feedRepository.getPopularAlbumsFromReviews()
 
 
-                _feedState.value = FeedState.Success(
-                    listOf(
-                        FeedItem.SectionHeader("Popular Albums"),
-                        *popularAlbums.toTypedArray(),
-                        FeedItem.SectionHeader("Recent Reviews"),
-                        *recentReviews.toTypedArray()
+                val items = mutableListOf<FeedItem>().apply {
+                    add(FeedItem.SectionHeader("Recent Reviews"))
+                    addAll(
+                        recentResult.map { review ->
+                            FeedItem.ReviewItem(
+                                review = review,
+                                album = review.albumDetails // Should be populated in repository
+                            )
+                        }
                     )
-                )
+                    add(FeedItem.SectionHeader("Popular Albums"))
+                    addAll(popularResult)
+                }
+
+                _feedState.value = FeedState.Success(items)
             } catch (e: Exception) {
-                _feedState.value = FeedState.Error(e.message ?: "Unknown error")
+                _feedState.value = FeedState.Error(
+                    "Failed to load feed: ${e.localizedMessage ?: "Unknown error"}"
+                )
             }
         }
     }
-
     sealed class FeedState {
         object Loading : FeedState()
         data class Success(val items: List<FeedItem>) : FeedState()
         data class Error(val message: String) : FeedState()
+
     }
 }

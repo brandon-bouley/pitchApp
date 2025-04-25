@@ -1,67 +1,80 @@
 package com.example.pitchapp.ui.screens.review
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.ui.components.AlbumSearchField
-import com.example.pitchapp.viewmodel.ReviewViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pitchapp.ui.screens.search.SpinningRecord
+import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
 
 @Composable
 fun AddReviewScreen(
     navController: NavController,
     reviewViewModel: ReviewViewModel,
-    searchViewModel: SearchViewModel,
-    albumId: String?
+    searchViewModel: SearchViewModel
 ) {
-    val uiState       by reviewViewModel.uiState.collectAsState()
-    val loadedAlbum   by searchViewModel.selectedAlbum.collectAsState()
 
+    val uiState     by reviewViewModel.uiState.collectAsState()
 
-    LaunchedEffect(albumId) {
-        albumId?.let { searchViewModel.selectAlbumById(it) }
-    }
+    val loadedAlbum by searchViewModel.selectedAlbum.collectAsState()
 
     LaunchedEffect(loadedAlbum) {
         loadedAlbum?.let { reviewViewModel.setSelectedAlbum(it) }
     }
 
     Scaffold { padding ->
-        Column(Modifier.padding(padding).padding(16.dp)) {
+        Column(
+            Modifier
+                .padding(padding)
+                .padding(16.dp)
+        ) {
             Text("Selected Album:", style = MaterialTheme.typography.titleMedium)
             uiState.selectedAlbum?.let { album ->
-                Text("${album.name} by ${album.artists.joinToString { it.name }}",
-                    style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = "${album.title} by ${album.artist}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             } ?: Text("No album selected", style = MaterialTheme.typography.bodyMedium)
 
             Spacer(Modifier.height(8.dp))
 
+
             AlbumSearchField(
                 viewModel       = searchViewModel,
-                onAlbumSelected = { reviewViewModel.setSelectedAlbum(it) },
+                onAlbumSelected = { searchViewModel.selectAlbum(it) },
                 modifier        = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(16.dp))
             Text("Rating:", style = MaterialTheme.typography.titleMedium)
             StarRating(
-                rating         = uiState.rating,
-                onRatingChange = { reviewViewModel.updateRating(it) }
+                rating = uiState.rating,
+                onRatingChange = { reviewViewModel.updateRating(it.toFloat()) }
             )
 
             Spacer(Modifier.height(16.dp))
@@ -82,27 +95,35 @@ fun AddReviewScreen(
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = {
-                    reviewViewModel.submitReview { navController.popBackStack() }
+                    // At submit time, ReviewVM already knows selectedAlbum.artist/title
+                    reviewViewModel.submitReview {
+                        navController.popBackStack()
+                    }
                 },
                 enabled = uiState.isFormValid && !uiState.isSubmitting,
                 modifier = Modifier.align(Alignment.End)
             ) {
-                if (uiState.isSubmitting) SpinningRecord()
-                else Text("Submit Review")
+                if (uiState.isSubmitting) {
+                    SpinningRecord()
+                } else {
+                    Text("Submit Review")
+                }
             }
 
             uiState.errorMessage?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+                Text(
+                    it,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
         }
     }
 }
 
-
-
 @Composable
 fun StarRating(
-    rating: Int,
+    rating: Float,
     onRatingChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {

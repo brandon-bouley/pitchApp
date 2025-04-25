@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -85,14 +84,17 @@ private fun FeedListContent(
                 is FeedItem.ReviewItem ->
                     ReviewCard(
                         reviewItem = item,
-                        onClick = { navController.navigate("album/${item.review.albumId}") }
+                        onClick = { navController.navigate("album/${item.album?.id}") }
                     )
 
                 is FeedItem.AlbumItem ->
                     AlbumCard(
                         albumItem = item,
-                        onClick = { navController.navigate("album/${item.album.id}") }
+                        onClick = {
+                            navController.navigate("album/${item.album.id}")
+                        }
                     )
+
             }
         }
     }

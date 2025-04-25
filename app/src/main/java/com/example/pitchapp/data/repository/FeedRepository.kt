@@ -4,48 +4,91 @@ import android.util.Log
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.FeedItem
 import com.example.pitchapp.data.model.Review
-import com.example.pitchapp.data.local.ReviewDao
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.coroutineScope
+import com.example.pitchapp.data.model.Result
 class FeedRepository(
-    private val reviewDao: ReviewDao,
-    private val musicRepo: MusicRepository
+    private val reviewRepository: ReviewRepository,
+    private val musicRepository: MusicRepository
 ) {
+
     suspend fun getPopularAlbumsFromReviews(limit: Int = 10): List<FeedItem.AlbumItem> {
         return try {
-
-            val allReviews = reviewDao.getAllReviews()
-            val albumReviewMap = allReviews.groupBy { it.albumId }
-
-
-            albumReviewMap.mapNotNull { (albumId, reviews) ->
-
-                when (val result = musicRepo.getAlbumDetails(albumId)) {
-                    is MusicRepository.Result.Success -> {
-                        val album = result.data
-                        val avgRating = reviews.map { it.rating }.average().toFloat()
-                        FeedItem.AlbumItem(
-                            album = album,
-                            averageRating = avgRating,
-                            popularity = album.popularity
-                        )
-                    }
-                    is MusicRepository.Result.Error -> null
+            when (val reviewsResult = reviewRepository.getAllReviews()) {
+                is Result.Success -> processPopularAlbums(reviewsResult.data, limit)
+                is Result.Error -> {
+                    Log.e("FEED_REPO", "Failed to get reviews", reviewsResult.exception)
+                    emptyList()
                 }
-            }.sortedByDescending { it.popularity }
-                .take(limit)
+            }
         } catch (e: Exception) {
-            emptyList()
+            Log.e("FEED_REPO", "Popular albums error", e)
+            throw e
         }
     }
 
-    suspend fun getRecentReviewItems(limit: Int = 10): List<FeedItem.ReviewItem> {
-        return reviewDao.getRecentReviews(limit).map { review ->
-            val albumResult = musicRepo.getAlbumDetails(review.albumId)
+    private suspend fun processPopularAlbums(
+        allReviews: List<Review>,
+        limit: Int
+    ): List<FeedItem.AlbumItem> {
+        val albumMap = mutableMapOf<String, Pair<Album, List<Review>>>()
+
+        // Group reviews by album ID
+        val groupedReviews = allReviews.groupBy { it.albumId }
+
+        // Fetch album details in parallel
+        coroutineScope {
+            groupedReviews.forEach { (albumId, reviews) ->
+                launch {
+                    when (val albumResult = musicRepository.getAlbumFromFirestore(albumId)) {
+                        is Result.Success -> {
+                            albumMap[albumId] = Pair(albumResult.data, reviews)
+                        }
+                        is Result.Error -> {
+                            Log.w("FEED_REPO", "Failed to fetch album $albumId", albumResult.exception)
+                        }
+                    }
+                }
+            }
+        }
+
+        return albumMap.values
+            .map { (album, reviews) ->
+                FeedItem.AlbumItem(
+                    album = album,
+                    averageRating = reviews.map { it.rating }.average().toFloat()
+                )
+            }
+            .sortedByDescending { it.averageRating }
+            .take(limit)
+    }
+
+    suspend fun getRecentReviewItems(limit: Int = 10): List<Review> {
+        return try {
+            when (val result = reviewRepository.getRecentReviews(limit)) {
+                is Result.Success -> result.data
+                is Result.Error -> throw result.exception
+            }
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
+    private suspend fun processRecentReviews(
+        reviews: List<Review>
+    ): List<FeedItem.ReviewItem> {
+        return reviews.map { review ->
+            val album = when (val result = musicRepository.getAlbumFromFirestore(review.albumId)) {
+                is Result.Success -> result.data
+                is Result.Error -> {
+                    Log.w("FEED_REPO", "Missing album ${review.albumId}", result.exception)
+                    null
+                }
+            }
+
             FeedItem.ReviewItem(
                 review = review,
-                album = (albumResult as? MusicRepository.Result.Success)?.data
+                album = album
             )
         }
     }

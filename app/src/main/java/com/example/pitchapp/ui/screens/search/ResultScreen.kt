@@ -18,13 +18,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Artist
+import com.example.pitchapp.data.model.FeedItem
+import com.example.pitchapp.ui.components.AlbumCard
 import com.example.pitchapp.viewmodel.SearchViewModel
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -34,42 +36,11 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import com.example.pitchapp.R
 
-@Composable
-fun SpinningRecord() {
-    // Infinite rotation animation
-    val infiniteTransition = rememberInfiniteTransition()
-
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        )
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize(),
-        contentAlignment = Alignment.Center
-
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.record_icon),
-            contentDescription = "Spinning Record",
-            modifier = Modifier
-                .rotate(angle)
-                .size(100.dp),
-        )
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultScreen(navController: NavController, viewModel: SearchViewModel = viewModel()) {
     val searchState by viewModel.searchState.collectAsState()
     val results = searchState.results
-
 
     Scaffold(
         topBar = {
@@ -97,8 +68,12 @@ fun ResultScreen(navController: NavController, viewModel: SearchViewModel = view
             ) {
                 items(results.size) { index ->
                     when (val item = results[index]) {
-                        is Artist -> TrackCard(track = item)
-                        is Album -> AlbumCard(album = item)
+                        is Album -> AlbumCard(
+                            albumItem = FeedItem.AlbumItem(item),
+                            onClick = {
+                                navController.navigate("album/${item.id}")
+                            }
+                        )
                         else -> Text("Unknown item type")
                     }
                 }
@@ -106,44 +81,32 @@ fun ResultScreen(navController: NavController, viewModel: SearchViewModel = view
         }
     }
 }
-
 @Composable
-fun TrackCard(track: Artist) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Artist: ${track.name}", style = MaterialTheme.typography.titleMedium)
-            Text("Profile: ${track.href}", style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
+fun SpinningRecord() {
+    // Infinite rotation animation
+    val infiniteTransition = rememberInfiniteTransition()
 
-@Composable
-fun AlbumCard(album: Album) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        )
+    )
+
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Album: ${album.name}", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Artist(s): ${album.artists.joinToString { it.name }}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
+        Image(
+            painter = painterResource(id = R.drawable.record_icon),
+            contentDescription = "Spinning Record",
+            modifier = Modifier
+                .rotate(angle)
+                .size(100.dp),
+        )
     }
 }
