@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "896403685263",
+    "project_id": "bbouleycs501",
+    "storage_bucket": "bbouleycs501.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:896403685263:android:9a9065e8198352c1b7d5fa",
+        "android_client_info": {
+          "package_name": "com.example.pitchapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1OmVdmmO4TfZv-vRSepdZPmOwyp7IzrI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

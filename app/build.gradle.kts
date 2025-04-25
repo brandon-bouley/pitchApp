@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp") version "2.1.10-1.0.31"
     id("kotlin-kapt")
+    id("kotlin-parcelize")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -46,6 +48,12 @@ android {
 
 dependencies {
 
+    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+
+    implementation("org.jetbrains.kotlin:kotlin-parcelize-runtime:1.9.22")
+
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
     implementation("androidx.compose.material3:material3-window-size-class:1.1.1")
 
 
@@ -56,6 +64,8 @@ dependencies {
     implementation(libs.androidx.navigation.safe.args.generator){
         exclude(group = "xmlpull", module = "xmlpull")
     }
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.auth.ktx)
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
