@@ -5,13 +5,18 @@ import androidx.lifecycle.viewModelScope
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Review
 import com.example.pitchapp.data.repository.ReviewRepository
+import com.google.firebase.Firebase
+import com.google.firebase.Timestamp
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+import com.example.pitchapp.data.model.Result
 
 class ReviewViewModel(
-    private val repository: ReviewRepository
+    private val reviewRepository: ReviewRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReviewUiState())
@@ -24,9 +29,9 @@ class ReviewViewModel(
         )
     }
 
-    fun updateRating(rating: Int) {
+    fun updateRating(rating: Float) {
         _uiState.value = _uiState.value.copy(
-            rating = rating,
+            rating = rating.coerceIn(0.5f, 5.0f).roundToNearestHalf(),
             errorMessage = null
         )
     }
@@ -40,30 +45,57 @@ class ReviewViewModel(
 
     fun submitReview(onSuccess: () -> Unit) {
         val currentState = _uiState.value
+        val currentUser = Firebase.auth.currentUser
+
+        // Validate user first
+        if (currentUser == null) {
+            _uiState.value = currentState.copy(
+                errorMessage = "You must be logged in to submit a review"
+            )
+            return
+        }
+
+        // Then validate form
         if (!currentState.isFormValid) {
             _uiState.value = currentState.copy(
-                errorMessage = "Please select an album and provide a rating"
+                errorMessage = "Please select an album and provide a valid rating (0.5-5 stars)"
             )
             return
         }
 
         viewModelScope.launch {
             _uiState.value = currentState.copy(isSubmitting = true)
+
             try {
-                repository.insertReview(
-                    Review(
-                        albumId = currentState.selectedAlbum!!.id,
-                        albumTitle = currentState.selectedAlbum.name,
-                        author = "current_user", // Replace with actual user
-                        content = currentState.reviewText,
-                        rating = currentState.rating
-                    )
+                val review = Review(
+                    albumId = currentState.selectedAlbum!!.id,
+                    userId = currentUser.uid,
+                    username = currentUser.displayName?.takeIf { it.isNotBlank() } ?: "Anonymous",
+                    content = currentState.reviewText,
+                    rating = currentState.rating,
+                    timestamp = Timestamp.now()
                 )
-                onSuccess()
+
+                when (val result = reviewRepository.insertReview(review)) {
+                    is Result.Success -> {
+                        _uiState.value = currentState.copy(
+                            isSubmitting = false,
+                            submissionSuccess = true,
+                            errorMessage = null
+                        )
+                        onSuccess()
+                    }
+                    is Result.Error -> {
+                        _uiState.value = currentState.copy(
+                            isSubmitting = false,
+                            errorMessage = "Failed to submit: ${result.exception.message ?: "Unknown error"}"
+                        )
+                    }
+                }
             } catch (e: Exception) {
                 _uiState.value = currentState.copy(
                     isSubmitting = false,
-                    errorMessage = "Failed to submit review: ${e.localizedMessage}"
+                    errorMessage = "Error: ${e.localizedMessage ?: "Failed to submit review"}"
                 )
             }
         }
@@ -71,12 +103,17 @@ class ReviewViewModel(
 
     data class ReviewUiState(
         val selectedAlbum: Album? = null,
-        val rating: Int = 0,
+        val rating: Float = 0f,
         val reviewText: String = "",
         val isSubmitting: Boolean = false,
+        val submissionSuccess: Boolean = false,
         val errorMessage: String? = null
     ) {
         val isFormValid: Boolean
-            get() = selectedAlbum != null && rating > 0 && reviewText.isNotBlank()
+            get() = selectedAlbum != null &&
+                    rating >= 0.5f &&
+                    reviewText.length in 10..500
     }
+
+    private fun Float.roundToNearestHalf(): Float = (this * 2).roundToInt() / 2f
 }
