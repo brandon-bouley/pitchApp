@@ -71,14 +71,17 @@ private fun FeedListContent(
                 is FeedItem.ReviewItem ->
                     ReviewCard(
                         reviewItem = item,
-                        onClick = { navController.navigate("album/${item.review.albumId}") }
+                        onClick = { navController.navigate("album/${item.album?.id}") }
                     )
 
                 is FeedItem.AlbumItem ->
                     AlbumCard(
                         albumItem = item,
-                        onClick = { navController.navigate("album/${item.album.id}") }
+                        onClick = {
+                            navController.navigate("album/${item.album.id}")
+                        }
                     )
+
             }
         }
     }
