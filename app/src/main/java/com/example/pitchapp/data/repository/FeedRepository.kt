@@ -20,6 +20,7 @@ class FeedRepository(
                     Log.e("FEED_REPO", "Failed to get reviews", reviewsResult.exception)
                     emptyList()
                 }
+                else -> throw IllegalStateException("Unexpected result type")
             }
         } catch (e: Exception) {
             Log.e("FEED_REPO", "Popular albums error", e)
@@ -47,6 +48,7 @@ class FeedRepository(
                         is Result.Error -> {
                             Log.w("FEED_REPO", "Failed to fetch album $albumId", albumResult.exception)
                         }
+                        else -> throw IllegalStateException("Unexpected result type")
                     }
                 }
             }
@@ -68,6 +70,7 @@ class FeedRepository(
             when (val result = reviewRepository.getRecentReviews(limit)) {
                 is Result.Success -> result.data
                 is Result.Error -> throw result.exception
+                else -> throw IllegalStateException("Unexpected result type")
             }
         } catch (e: Exception) {
             throw e
@@ -84,6 +87,7 @@ class FeedRepository(
                     Log.w("FEED_REPO", "Missing album ${review.albumId}", result.exception)
                     null
                 }
+                else -> throw IllegalStateException("Unexpected result type")
             }
 
             FeedItem.ReviewItem(

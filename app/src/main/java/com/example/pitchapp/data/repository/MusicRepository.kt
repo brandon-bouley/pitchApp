@@ -20,6 +20,19 @@ class MusicRepository @Inject constructor(
     private val lastFmService: LastFmService
 ) {
 
+    companion object {
+        fun generateAlbumId(artist: String, title: String): String {
+            val normalized = "${artist.trim().lowercase()}|${title.trim().lowercase()}"
+            return normalized.sha256()
+        }
+
+        private fun String.sha256(): String {
+            val bytes = MessageDigest.getInstance("SHA-256")
+                .digest(this.toByteArray(Charsets.UTF_8))
+            return bytes.joinToString("") { "%02x".format(it) }
+        }
+    }
+
     private val db = Firebase.firestore("pitchdb")
     private val albumsRef = db.collection("albums")
 
@@ -54,17 +67,6 @@ class MusicRepository @Inject constructor(
         } catch (e: Exception) {
             Result.Error(e)
         }
-    }
-
-    fun generateAlbumId(artist: String, title: String): String {
-        val normalized = "${artist.trim().lowercase()}|${title.trim().lowercase()}"
-        return normalized.toSHA256()
-    }
-
-    private fun String.toSHA256(): String {
-        val bytes = MessageDigest.getInstance("SHA-256")
-            .digest(this.toByteArray(Charsets.UTF_8))
-        return bytes.joinToString("") { "%02x".format(it) }
     }
 
     // ----- ARTIST SEARCH -----
@@ -175,8 +177,10 @@ class MusicRepository @Inject constructor(
                         }
                     }
                     is Result.Error -> apiResult
+                    else -> Result.Error(IllegalStateException("Unexpected API result"))
                 }
             }
+            else -> Result.Error(IllegalStateException("Unexpected existing result"))
         }
     }
 
@@ -185,7 +189,18 @@ class MusicRepository @Inject constructor(
 
         return when (val existing = getAlbumFromFirestore(albumId)) {
             is Result.Success -> existing
-            is Result.Error -> fetchAndSaveAlbum(artist, title, albumId)
+            else -> {
+                // Fetch full details from API
+                when (val apiResult = getAlbumInfo(artist = artist, album = title)) {
+                    is Result.Success -> {
+                        val album = apiResult.data.copy(id = albumId)
+                        saveAlbumToFirestore(album)
+                        Result.Success(album)
+                    }
+                    is Result.Error -> apiResult
+                    else -> Result.Error(Exception("Unexpected result"))
+                }
+            }
         }
     }
 
@@ -202,6 +217,8 @@ class MusicRepository @Inject constructor(
                 }
             }
             is Result.Error -> apiResult
+            else -> Result.Error(IllegalStateException("Unexpected API result"))
+
         }
     }
 

@@ -1,5 +1,7 @@
 package com.example.pitchapp.data.model
 
+import com.example.pitchapp.data.repository.MusicRepository.Companion.generateAlbumId
+
 // --- Artist mapping ---
 fun ApiArtist.toDomainArtist(): Artist {
     val imageUrl = image.firstOrNull { it.size == "medium" }?.url
@@ -18,18 +20,12 @@ fun ApiArtist.toDomainArtist(): Artist {
 
 // --- Album mapping for top‐albums endpoint ---
 fun ApiAlbumSimple.toDomainAlbum(): Album {
-    val artworkUrl = image
-        .firstOrNull { it.size == "extralarge" }
-        ?.url
-        .takeUnless { it.isNullOrBlank() }
-        ?: image.firstOrNull()?.url.orEmpty()
-
     return Album(
-        title      = name,
-        artist     = artist.name,
-        artworkUrl = artworkUrl,
-        lastFmUrl  = url,
-        playCount  = playcount
+        id = generateAlbumId(artist.name, name),
+        title = name,
+        artist = artist.name,
+        artworkUrl = image.lastOrNull { it.size == "extralarge" }?.url ?: "",
+        lastFmUrl = url
     )
 }
 
@@ -37,6 +33,7 @@ fun ApiAlbumSimple.toDomainAlbum(): Album {
 // --- Album mapping for album.search endpoint ---
 fun ApiAlbum.toDomainAlbum(): Album {
     return Album(
+        id = generateAlbumId(this.artist, this.name),
         mbid = this.mbid.ifEmpty { null },
         title = this.name,
         artist = this.artist,
@@ -56,6 +53,7 @@ fun AlbumDetail.toDomainAlbum(): Album {
         ?: ""
 
     return Album(
+        id = generateAlbumId(artist, name),
         title = name,
         artist = artist,
         artworkUrl = primaryImage,

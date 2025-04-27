@@ -31,7 +31,6 @@ class SearchViewModel(
     private val _selectedAlbum = MutableStateFlow<Album?>(null)
     val selectedAlbum: StateFlow<Album?> = _selectedAlbum.asStateFlow()
 
-    // Add missing state properties
     private val _selectedArtist = MutableStateFlow<Artist?>(null)
     val selectedArtist: StateFlow<Artist?> = _selectedArtist.asStateFlow()
 
@@ -40,6 +39,9 @@ class SearchViewModel(
 
     private val _navigationAlbumId = mutableStateOf<String?>(null)
     val navigationAlbumId: State<String?> get() = _navigationAlbumId
+
+    private val _isAlbumSelected = MutableStateFlow(false)
+    val isAlbumSelected: StateFlow<Boolean> = _isAlbumSelected.asStateFlow()
 
     private var searchJob: Job? = null
 
@@ -89,6 +91,7 @@ class SearchViewModel(
                             )
                         }
                     }
+                    else -> Result.Error(IllegalStateException("Unexpected result type"))
                 }
             } catch (e: Exception) {
                 _searchState.update {
@@ -108,8 +111,21 @@ class SearchViewModel(
 
     fun selectAlbum(album: Album) {
         viewModelScope.launch {
-            _selectedAlbum.value = album
-            loadAlbumDetails(album.id)
+            _selectedAlbum.value = null
+            _isAlbumSelected.value = false // Reset while loading
+
+            when (val result = musicRepository.getOrFetchAlbum(album.artist, album.title)) {
+                is Result.Success -> {
+                    _selectedAlbum.value = result.data
+                    _isAlbumSelected.value = true
+                    loadAlbumDetails(result.data.id)
+                }
+                is Result.Error -> {
+                    _searchState.update { it.copy(error = result.exception.message) }
+                    _isAlbumSelected.value = false
+                }
+                else -> Result.Error(IllegalStateException("Unexpected result type"))
+            }
         }
     }
 
@@ -126,6 +142,7 @@ class SearchViewModel(
                         it.copy(error = "Album load failed: ${result.exception.message}")
                     }
                 }
+                else -> Result.Error(IllegalStateException("Unexpected result type"))
             }
             _searchState.update { it.copy(isLoading = false) }
         }
@@ -204,6 +221,7 @@ class SearchViewModel(
                         )
                     }
                 }
+                else -> Result.Error(IllegalStateException("Unexpected result type"))
             }
         }
     }
@@ -225,7 +243,9 @@ class SearchViewModel(
     }
 
     fun resetSearch() {
-        _selectedAlbum.value = null
+        _selectedArtist.value = null
+        _artistAlbums.value = emptyList()
         _searchState.value = SearchState()
+        _isAlbumSelected.value = false
     }
 }
