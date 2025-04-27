@@ -91,6 +91,12 @@ class ReviewViewModel(
                             errorMessage = "Failed to submit: ${result.exception.message ?: "Unknown error"}"
                         )
                     }
+                    else -> {
+                        _uiState.value = currentState.copy(
+                            isSubmitting = false,
+                            errorMessage = "Unexpected result type"
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.value = currentState.copy(

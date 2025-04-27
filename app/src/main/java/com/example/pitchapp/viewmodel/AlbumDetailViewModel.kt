@@ -57,6 +57,9 @@ class AlbumDetailViewModel(
                 is Result.Error -> {
                     _error.value = result.exception.message
                 }
+                else -> {
+                    _error.value = "Unexpected result type: ${result.javaClass.simpleName}"
+                }
             }
             _isLoading.value = false
         }
@@ -68,10 +71,12 @@ class AlbumDetailViewModel(
                 when (val reviewsResult = reviewRepository.getReviewsForAlbum(albumId)) {
                     is Result.Success -> _reviews.value = reviewsResult.data
                     is Result.Error -> _error.value = reviewsResult.exception.message
+                    else -> {
+                        // Handle unexpected state
+                        _error.value = "Unexpected result type: ${reviewsResult.javaClass.simpleName}"
+                    }
                 }
-            } catch (e: Exception) {
-                _error.value = "Failed to load reviews: ${e.localizedMessage}"
-            }
+            } catch (_: Exception) {}
         }
     }
 }
