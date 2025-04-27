@@ -38,26 +38,29 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.navigation.NavController
+import com.example.pitchapp.ui.components.ReviewCard
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
+import com.example.pitchapp.viewmodel.ReviewViewModel
 import java.util.Locale
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlbumDetailScreen(
     albumId: String,
     viewModel: AlbumDetailViewModel,
+    reviewViewModel: ReviewViewModel,
     navController: NavController
 ) {
     val album = viewModel.albumDetails.value
     val isLoading = viewModel.isLoading.value
     val error = viewModel.error.value
+    val reviews by reviewViewModel.reviews.collectAsState()
 
-    // Fetch album details if not already loaded
     LaunchedEffect(albumId) {
         if (album == null || album.id != albumId) {
             viewModel.loadAlbumDetails(albumId)
         }
+        reviewViewModel.loadReviews(albumId) // Load reviews when screen opens
     }
 
     Scaffold(
@@ -78,38 +81,29 @@ fun AlbumDetailScreen(
                 .padding(padding)
         ) {
             when {
-                isLoading -> {
-                    CircularProgressIndicator()
-                }
+                isLoading -> CircularProgressIndicator()
+                error != null -> Text("Error: $error", color = MaterialTheme.colorScheme.error)
+                else -> LazyColumn(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item { AlbumHeader(album = album!!) }
 
-                error != null -> {
-                    Text("Error loading album: $error", color = MaterialTheme.colorScheme.error)
-                }
-
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        item {
-                            AlbumHeader(album = album!!)
-                        }
-
-                        if (album != null) {
-                            if (album.tracks.isNotEmpty()) {
-                                item {
-                                    Text(
-                                        text = "Track List",
-                                        style = MaterialTheme.typography.titleLarge
-                                    )
-                                }
-                                items(album.tracks) { track ->
-                                    TrackItem(track)
-                                }
+                    if (album != null) {
+                        if (album.tracks.isNotEmpty()) {
+                            item { Text("Track List", style = MaterialTheme.typography.titleLarge) }
+                            items(album.tracks) { track ->
+                                TrackItem(track)
                             }
                         }
+                    }
+
+                    item { Text("Reviews", style = MaterialTheme.typography.titleLarge) }
+                    items(reviews) { review ->
+                        ReviewCard(
+                            review = review,
+                            onLikeClicked = { reviewViewModel.toggleLike(review) }
+                        )
                     }
                 }
             }
@@ -152,7 +146,7 @@ fun AlbumDetailScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                StatItem("Listeners", album.listeners.toString())
+                StatItem("Summary", album.summary.toString())
                 StatItem("Plays", album.playCount.toString())
             }
         }

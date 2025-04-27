@@ -28,6 +28,8 @@ import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import com.google.firebase.initialize
 
 
@@ -110,14 +112,6 @@ class AlbumDetailViewModelFactory(
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Initialize Firebase
-        try {
-            FirebaseApp.getInstance()
-        } catch (e: IllegalStateException) {
-            FirebaseApp.initializeApp(this)
-        }
-
         // Dependency setup
         val api = LastFmApi.service
         val musicRepository = MusicRepository(api)
@@ -146,7 +140,8 @@ class MainActivity : ComponentActivity() {
                     feedViewModelFactory = feedViewModelFactory,
                     reviewViewModelFactory = reviewViewModelFactory,
                     searchViewModelFactory = searchViewModelFactory,
-                    profileViewModelFactory = profileViewModelFactory
+                    profileViewModelFactory = profileViewModelFactory,
+
                 )
             }
         }
@@ -160,7 +155,8 @@ private fun FirebaseAuthHandler(
     feedViewModelFactory: FeedViewModelFactory,
     reviewViewModelFactory: ReviewViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
-    profileViewModelFactory: ProfileViewModelFactory
+    profileViewModelFactory: ProfileViewModelFactory,
+
 ) {
 
 
@@ -168,7 +164,8 @@ private fun FirebaseAuthHandler(
         feedViewModelFactory = feedViewModelFactory,
         reviewViewModelFactory = reviewViewModelFactory,
         searchViewModelFactory = searchViewModelFactory,
-        profileViewModelFactory = profileViewModelFactory
+        profileViewModelFactory = profileViewModelFactory,
+
     )
     }
 

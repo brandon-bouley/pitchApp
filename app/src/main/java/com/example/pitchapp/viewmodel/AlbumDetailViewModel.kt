@@ -65,7 +65,7 @@ class AlbumDetailViewModel(
         }
     }
 
-    private fun loadReviews(albumId: String) {
+    fun loadReviews(albumId: String) {
         viewModelScope.launch {
             try {
                 when (val reviewsResult = reviewRepository.getReviewsForAlbum(albumId)) {

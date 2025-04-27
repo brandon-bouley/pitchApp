@@ -33,13 +33,14 @@ import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun MainApp(
     feedViewModelFactory: FeedViewModelFactory,
     reviewViewModelFactory: ReviewViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
-    profileViewModelFactory: ProfileViewModelFactory
+    profileViewModelFactory: ProfileViewModelFactory,
 ) {
     val navController = rememberNavController()
 
@@ -52,13 +53,15 @@ fun MainApp(
             composable(Screen.Feed.route) {
                 FeedScreen(
                     navController = navController,
-                    viewModel = viewModel<FeedViewModel>(factory = feedViewModelFactory)
+                    viewModel = viewModel<FeedViewModel>(factory = feedViewModelFactory),
+                    reviewViewModel = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
                 )
             }
             composable(Screen.Search.route) {
                 SearchScreen(
                     navController = navController,
-                    viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
+                    viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory),
+                    reviewViewModel = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
                 )
             }
             composable(Screen.Results.route) {
@@ -93,7 +96,9 @@ fun MainApp(
                 AlbumDetailScreen(
                         albumId = albumId,
                         viewModel = viewModel,
+                        reviewViewModel = viewModel<ReviewViewModel>(factory = reviewViewModelFactory),
                         navController = navController
+
                     )
 
             }

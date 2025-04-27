@@ -33,7 +33,7 @@ class MusicRepository @Inject constructor(
         }
     }
 
-    private val db = Firebase.firestore("pitchdb")
+    private val db = Firebase.firestore
     private val albumsRef = db.collection("albums")
 
 

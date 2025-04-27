@@ -19,8 +19,26 @@ class ReviewViewModel(
     private val reviewRepository: ReviewRepository
 ) : ViewModel() {
 
+    private val dummyAdminId = "admin"
+    private val dummyAdminName = "PitchesLoveMySwag"
+
     private val _uiState = MutableStateFlow(ReviewUiState())
     val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
+
+    private val _reviews = MutableStateFlow<List<Review>>(emptyList())
+    val reviews: StateFlow<List<Review>> = _reviews.asStateFlow()
+
+    fun loadReviews(albumId: String) {
+        viewModelScope.launch {
+            when (val result = reviewRepository.getReviewsForAlbum(albumId)) {
+                is Result.Success -> _reviews.value = result.data
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to load reviews: ${result.exception.message}"
+                )
+                else -> throw IllegalStateException("Unexpected result type")
+            }
+        }
+    }
 
     fun setSelectedAlbum(album: Album) {
         _uiState.value = _uiState.value.copy(
@@ -45,7 +63,13 @@ class ReviewViewModel(
 
     fun submitReview(onSuccess: () -> Unit) {
         val currentState = _uiState.value
-        val currentUser = Firebase.auth.currentUser
+//        val currentUser = Firebase.auth.currentUser
+
+        val currentUser = object { // Dummy user for testing
+            val uid = dummyAdminId
+            val displayName = dummyAdminName
+        }
+
 
         // Validate user first
         if (currentUser == null) {
@@ -70,7 +94,7 @@ class ReviewViewModel(
                 val review = Review(
                     albumId = currentState.selectedAlbum!!.id,
                     userId = currentUser.uid,
-                    username = currentUser.displayName?.takeIf { it.isNotBlank() } ?: "Anonymous",
+                    username = currentUser.displayName,
                     content = currentState.reviewText,
                     rating = currentState.rating,
                     timestamp = Timestamp.now()
@@ -103,6 +127,29 @@ class ReviewViewModel(
                     isSubmitting = false,
                     errorMessage = "Error: ${e.localizedMessage ?: "Failed to submit review"}"
                 )
+            }
+        }
+    }
+
+    // Add like functionality
+    fun toggleLike(review: Review) {
+        viewModelScope.launch {
+            // For now using dummy admin ID, replace with real user ID later
+            val userId = dummyAdminId
+            when (val result = reviewRepository.toggleLike(review.id, userId)) {
+                is Result.Success -> {
+                    // Update local state if needed
+                }
+                is Result.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = "Could not update like: ${result.exception.message}"
+                    )
+                }
+                else -> {
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = "Unexpected result type"
+                    )
+                }
             }
         }
     }
