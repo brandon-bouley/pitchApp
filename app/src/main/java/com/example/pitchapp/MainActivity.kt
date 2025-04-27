@@ -1,237 +1,188 @@
 package com.example.pitchapp
-import androidx.compose.runtime.livedata.observeAsState
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.navigation.compose.rememberNavController
-import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.pitchapp.viewmodel.MusicViewModel
-import androidx.compose.foundation.lazy.LazyColumn
-import com.example.pitchapp.data.model.Album
-import com.example.pitchapp.data.model.Artist
-import com.example.pitchapp.data.remote.BuildApi
-import com.example.pitchapp.data.repository.MusicRepository
-import androidx.lifecycle.ViewModelProvider
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import android.util.Log
-import com.example.pitchapp.data.local.PitchDatabase
-import com.example.pitchapp.data.model.UserPreference
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.pitchapp.data.remote.LastFmApi
+import com.example.pitchapp.data.repository.FeedRepository
+import com.example.pitchapp.data.repository.MusicRepository
+import com.example.pitchapp.data.repository.ProfileRepository
+import com.example.pitchapp.data.repository.ReviewRepository
+import com.example.pitchapp.viewmodel.AlbumDetailViewModel
+import com.example.pitchapp.viewmodel.FeedViewModel
+import com.example.pitchapp.viewmodel.ProfileViewModel
+import com.example.pitchapp.viewmodel.ReviewViewModel
+import com.example.pitchapp.viewmodel.SearchViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
+import com.google.firebase.initialize
 
 
-class MusicViewModelFactory(
-    private val repository: MusicRepository
+class ProfileViewModelFactory(
+    private val profileRepository: ProfileRepository
 ) : ViewModelProvider.Factory {
-
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MusicViewModel::class.java)) {
-            return MusicViewModel(repository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+        extras: CreationExtras
+    ): T {
+        return ProfileViewModel(
+            repository = profileRepository,
+        ) as T
     }
 }
+
+// FeedViewModelFactory
+class FeedViewModelFactory(
+    private val repository: FeedRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+    ): T {
+        return FeedViewModel(
+            feedRepository = repository,
+        ) as T
+    }
+}
+
+// ReviewViewModelFactory
+class ReviewViewModelFactory(
+    private val repository: ReviewRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+    ): T {
+        return ReviewViewModel(
+            reviewRepository = repository,
+        ) as T
+    }
+}
+
+// SearchViewModelFactory
+class SearchViewModelFactory(
+    private val musicRepository: MusicRepository,
+    private val reviewRepository: ReviewRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+    ): T {
+        return SearchViewModel(
+            musicRepository = musicRepository,
+            reviewRepository = reviewRepository,
+        ) as T
+    }
+}
+
+class AlbumDetailViewModelFactory(
+    private val musicRepository: MusicRepository,
+    private val reviewRepository: ReviewRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+        extras: CreationExtras
+    ): T {
+        return AlbumDetailViewModel(
+            musicRepository = musicRepository,
+            reviewRepository = reviewRepository,
+            savedStateHandle = extras.createSavedStateHandle()
+        ) as T
+    }
+}
+
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val api = BuildApi.api
+
+        // Initialize Firebase
+        try {
+            FirebaseApp.getInstance()
+        } catch (e: IllegalStateException) {
+            FirebaseApp.initializeApp(this)
+        }
+
+        // Dependency setup
+        val api = LastFmApi.service
         val musicRepository = MusicRepository(api)
-        val factory = MusicViewModelFactory(musicRepository)
-            //test script starts
-        val db = PitchDatabase.getDatabase(applicationContext)
-        val userDao = db.userPreferenceDao()
 
-        lifecycleScope.launch {
-            // Insert sample data
-            val testUser = UserPreference(
-                username = "jane_doe",
-                name = "Jane Doe",
-                age = 30,
-                bio = "Music Enthusiast",
-                email = "jane@example.com",
-                darkMode = true,
-                ratedItems = listOf("album:001", "artist:xyz")
-            )
+        // Repository initialization
+        val reviewRepository = ReviewRepository()
 
-            userDao.insertOrUpdatePreference(testUser)
-
-            // Retrieve and log the data
-            val loadedUser = userDao.getPreference("jane_doe")
-            Log.d("DB_TEST", "Loaded user: $loadedUser")
-        }
-        //test script ends
-        setContent {
-                val navController = rememberNavController()
-                NavGraph(navController = navController,factory=factory)
-
-        }
-    }
-
-}
-
-
-@Composable
-fun NavGraph(navController: NavHostController, factory: MusicViewModelFactory) {
-    val viewModel: MusicViewModel = viewModel(factory = factory)
-
-    NavHost(navController = navController, startDestination = "search") {
-        composable("search") {
-            SearchScreen(navController, viewModel)
-        }
-        composable("results") {
-            ResultScreen(navController, viewModel)
-        }
-    }
-}
-
-
-@Composable
-fun SearchScreen(navController: NavController, viewModel: MusicViewModel) {
-    var query by remember { mutableStateOf("") }
-    var searchType by remember { mutableStateOf("artist") } // "artist" or "album"
-    val searchResults by viewModel.searchResults.observeAsState(emptyList())
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text("Select Search Type", style = MaterialTheme.typography.titleMedium)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Button(
-                onClick = { searchType = "artist" },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (searchType == "artist") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Search Artists")
-            }
-
-            Button(
-                onClick = { searchType = "album" },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (searchType == "album") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Search Albums")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Enter $searchType name") },
-            modifier = Modifier.fillMaxWidth()
+        val feedRepository = FeedRepository(
+            reviewRepository = reviewRepository,
+            musicRepository = musicRepository,
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        val profileRepository = ProfileRepository()
 
-        Button(
-            onClick = {
-                if (searchType == "artist") {
-                    viewModel.searchArtists(query)
-                } else {
-                    viewModel.searchAlbums(query)
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Search $searchType")
-        }
-        LaunchedEffect(searchResults) {
-            if (searchResults.isNotEmpty()) {
-                println("navigating to results")
-                navController.navigate("results")
-            }
-        }
-    }
-}
+        // ViewModel factories
+        val feedViewModelFactory = FeedViewModelFactory(feedRepository)
+        val reviewViewModelFactory = ReviewViewModelFactory(reviewRepository)
+        val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
+        val profileViewModelFactory = ProfileViewModelFactory(profileRepository)
 
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ResultScreen(navController: NavController, viewModel: MusicViewModel = viewModel()) {
-    val results by viewModel.searchResults.observeAsState(emptyList())
-
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text("Search Results", style = MaterialTheme.typography.titleLarge)
-                }
-            )
-        }
-    ) { padding ->
-        if (results.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = androidx.compose.ui.Alignment.Center
-            ) {
-                Text("No results found.")
-            }
-        } else {
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(padding)
-            ) {
-                items(results.size) { index ->
-                    when (val item = results[index]) {
-                        is Artist -> TrackCard(track = item)
-                        is Album -> AlbumCard(album = item)
-                        else -> Text("Unknown item type")
-                    }
-                }
+        setContent {
+            PitchAppTheme {
+                FirebaseAuthHandler(
+                    musicRepository = musicRepository,
+                    reviewRepository = reviewRepository,
+                    feedViewModelFactory = feedViewModelFactory,
+                    reviewViewModelFactory = reviewViewModelFactory,
+                    searchViewModelFactory = searchViewModelFactory,
+                    profileViewModelFactory = profileViewModelFactory
+                )
             }
         }
     }
 }
 
 @Composable
-fun TrackCard(track: Artist) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Artist: ${track.name}", style = MaterialTheme.typography.titleMedium)
-            Text("Profile: ${track.href}", style = MaterialTheme.typography.bodyMedium)
-        }
+private fun FirebaseAuthHandler(
+    musicRepository: MusicRepository,
+    reviewRepository: ReviewRepository,
+    feedViewModelFactory: FeedViewModelFactory,
+    reviewViewModelFactory: ReviewViewModelFactory,
+    searchViewModelFactory: SearchViewModelFactory,
+    profileViewModelFactory: ProfileViewModelFactory
+) {
+
+
+    MainApp(
+        feedViewModelFactory = feedViewModelFactory,
+        reviewViewModelFactory = reviewViewModelFactory,
+        searchViewModelFactory = searchViewModelFactory,
+        profileViewModelFactory = profileViewModelFactory
+    )
     }
-}
+
 
 @Composable
-fun AlbumCard(album: Album) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Album: ${album.name}", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Artist(s): ${album.artists.joinToString { it.name }}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-    }
+fun PitchAppTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = lightColorScheme(
+            primary = Color(0xFFA3C1D3)
+        ),
+        content = content
+    )
 }
+
+
+
+

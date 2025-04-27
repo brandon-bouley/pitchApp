@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp") version "2.1.10-1.0.31"
     id("kotlin-kapt")
+    id("kotlin-parcelize")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -24,6 +26,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -45,9 +48,24 @@ android {
 
 dependencies {
 
+    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+
+    implementation("org.jetbrains.kotlin:kotlin-parcelize-runtime:1.9.22")
+
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    implementation("androidx.compose.material3:material3-window-size-class:1.1.1")
+
+
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0")
     implementation("androidx.room:room-ktx:2.6.1")
+    implementation(libs.places)
+    implementation(libs.androidx.navigation.safe.args.generator){
+        exclude(group = "xmlpull", module = "xmlpull")
+    }
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.auth.ktx)
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
@@ -60,6 +78,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     implementation("androidx.compose.runtime:runtime-livedata:1.5.1")
     implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation("androidx.compose.material3:material3:1.2.0")
+    implementation("androidx.compose.ui:ui:1.6.1")
+    implementation("androidx.compose.material:material-icons-extended:1.6.1")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui)

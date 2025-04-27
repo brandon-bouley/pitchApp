@@ -17,5 +17,11 @@ interface UserPreferenceDao {
 
     @Query("SELECT * FROM user_preferences")
     suspend fun getAllPreferences(): List<UserPreference>
+
+    @Query("SELECT COUNT(*) FROM user_preferences")
+    suspend fun countUsers(): Int
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(pref: UserPreference)
 }
 
