@@ -1,21 +1,28 @@
 package com.example.pitchapp.data.remote
 import retrofit2.http.GET
 import retrofit2.http.Query
-import com.example.pitchapp.data.model.Track
+import com.example.pitchapp.data.model.Artist
 import com.example.pitchapp.data.model.Album
 
 interface ReccoBeatsApiService {
     @GET("v1/album/search")
-    suspend fun searchAlbums(@Query("query") query: String): AlbumSearchResponse
+    suspend fun searchAlbums(@Query("searchText") query: String): AlbumSearchResponse
 
-    @GET("v1/track/search")
-    suspend fun searchTracks(@Query("query") query: String): TrackSearchResponse
+    @GET("v1/artist/search")
+    suspend fun searchArtists(@Query("searchText") query: String): ArtistSearchResponse
 }
 
 data class AlbumSearchResponse(
-    val albums: List<Album>
+    val content: List<Album>,
+    val page: Int,
+    val size: Int,
+    val totalElements: Int,
+    val totalPages: Int
 )
-
-data class TrackSearchResponse(
-    val tracks: List<Track>
+data class ArtistSearchResponse(
+    val content: List<Artist>,
+    val page: Int,
+    val size: Int,
+    val totalElements: Int,
+    val totalPages: Int
 )
