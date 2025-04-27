@@ -58,6 +58,9 @@ fun MainApp(
     val navController = rememberNavController()
     val systemDarkTheme = isSystemInDarkTheme()
     var darkTheme by remember { mutableStateOf(systemDarkTheme) }
+    val musicRepository = remember { MusicRepository(LastFmApi.service) }
+    val reviewRepository = remember { ReviewRepository() }
+
 
 
     PitchAppTheme(darkTheme = darkTheme) {
@@ -73,6 +76,7 @@ fun MainApp(
                     startDestination = Screen.Feed.route,
                     modifier = Modifier.padding(padding)
                 ) {
+
                     composable(Screen.Feed.route) {
                         FeedScreen(
                             navController = navController,
@@ -104,10 +108,11 @@ fun MainApp(
                             backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
                         val viewModel: AlbumDetailViewModel = viewModel(
                             factory = AlbumDetailViewModelFactory(
-                                musicRepository = MusicRepository(LastFmApi.service),
-                                reviewRepository = ReviewRepository()
+                                musicRepository = musicRepository,
+                                reviewRepository = reviewRepository
                             )
                         )
+
 
                         if (albumId == null) {
                             Text("Error: Missing album ID")

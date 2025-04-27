@@ -139,6 +139,7 @@ class SearchViewModel(
     fun loadAlbumDetails(albumId: String) {
         viewModelScope.launch {
             _searchState.update { it.copy(isLoading = true, error = null) }
+            println("albumId: $albumId")
 
             try {
                 // Get album details from Firestore
