@@ -47,6 +47,10 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.example.pitchapp.ui.navigation.LogoHeader
 import com.example.pitchapp.ui.theme.PitchAppTheme
+import com.example.pitchapp.ui.screens.profile.LoginScreen
+import com.example.pitchapp.ui.screens.profile.SignUpScreen
+import com.example.pitchapp.viewmodel.AuthViewModel
+
 
 @Composable
 fun MainApp(
@@ -58,6 +62,7 @@ fun MainApp(
     val navController = rememberNavController()
     val systemDarkTheme = isSystemInDarkTheme()
     var darkTheme by remember { mutableStateOf(systemDarkTheme) }
+    val authViewModel = viewModel<AuthViewModel>()
 
 
     PitchAppTheme(darkTheme = darkTheme) {
@@ -89,6 +94,19 @@ fun MainApp(
                         ResultScreen(
                             navController = navController,
                             viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
+                        )
+                    }
+                    composable("login") {
+                        LoginScreen(
+                            navController = navController,
+                            authViewModel = authViewModel
+                        )
+                    }
+
+                    composable("signup") {
+                        SignUpScreen(
+                            navController = navController,
+                            authViewModel = authViewModel
                         )
                     }
 
@@ -153,7 +171,8 @@ fun MainApp(
                         ProfileScreen(
                             navController = navController,
                             viewModel = profileVm,
-                            userId = userId
+                            userId = userId,
+                            authViewModel = authViewModel
                         )
                     }
 

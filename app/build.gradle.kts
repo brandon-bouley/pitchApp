@@ -88,6 +88,15 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
+
+    implementation("com.google.firebase:firebase-firestore-ktx:24.8.1")
+
+
+    implementation("com.google.firebase:firebase-common-ktx:20.4.2")
+
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.1")
+
     implementation(libs.androidx.lifecycle.runtime.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

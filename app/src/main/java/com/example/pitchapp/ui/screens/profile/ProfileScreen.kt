@@ -13,45 +13,65 @@ import androidx.navigation.NavController
 import com.example.pitchapp.data.model.FeedItem
 import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.ProfileViewModel
+import com.example.pitchapp.viewmodel.AuthViewModel
 
 @Composable
 fun ProfileScreen(
     navController: NavController,
     viewModel: ProfileViewModel,
-    userId: String
+    userId: String,
+    authViewModel: AuthViewModel
 ) {
     val profileState by viewModel.profileState.collectAsState()
+    val userId by authViewModel.userId.collectAsState()
 
-    LaunchedEffect(userId) {
-        viewModel.loadProfile(userId)
-    }
+    if (userId == null) {
+        // Not logged in
+        Column {
+            Text("Welcome to PitchApp!")
 
-    when (val state = profileState) {
-        is ProfileViewModel.ProfileState.Loading -> {
-            SpinningRecord()
-        }
-        is ProfileViewModel.ProfileState.Success -> {
-            Column {
-                // Profile header
-                Text(state.profile.displayName)
-                Text("${state.profile.reviewCount} reviews")
-                Text("Average rating: ${state.profile.averageRating}")
+            Button(onClick = { navController.navigate("login") }) {
+                Text("Login")
+            }
 
-                // Reviews list
-                LazyColumn {
-                    items(state.profile.reviews) { review ->
-                        FeedItem.ReviewItem(review)
-                    }
-                }
-
-                Button(onClick = { viewModel.refreshProfile(userId) }) {
-                    Text("Refresh Reviews")
-                }
+            Button(onClick = { navController.navigate("signup") }) {
+                Text("Create Account")
             }
         }
-        is ProfileViewModel.ProfileState.Error -> {
-            Text("Error: ${state.message}")
+    } else {
+        // User is logged in, load profile
+        LaunchedEffect(userId) {
+            viewModel.loadProfile(userId!!)
+        }
+
+        when (val state = profileState) {
+            is ProfileViewModel.ProfileState.Loading -> {
+                SpinningRecord()
+            }
+            is ProfileViewModel.ProfileState.Success -> {
+                Column {
+                    Text(state.profile.displayName)
+                    Text("${state.profile.reviewCount} reviews")
+                    Text("Average rating: ${state.profile.averageRating}")
+
+                    LazyColumn {
+                        items(state.profile.reviews) { review ->
+                            FeedItem.ReviewItem(review)
+                        }
+                    }
+
+                    Button(onClick = { viewModel.refreshProfile(userId!!) }) {
+                        Text("Refresh Reviews")
+                    }
+
+                    Button(onClick = { authViewModel.logout() }) {
+                        Text("Logout")
+                    }
+                }
+            }
+            is ProfileViewModel.ProfileState.Error -> {
+                Text("Error: ${state.message}")
+            }
         }
     }
 }
-
