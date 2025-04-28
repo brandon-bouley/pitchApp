@@ -48,7 +48,7 @@ android {
 
 dependencies {
 
-    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
 
     implementation("org.jetbrains.kotlin:kotlin-parcelize-runtime:1.9.22")
 
