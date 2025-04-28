@@ -25,6 +25,8 @@ class FeedViewModel(
 
 
                 val items = mutableListOf<FeedItem>().apply {
+                    add(FeedItem.SectionHeader("Popular Albums"))
+                    addAll(popularResult)
                     add(FeedItem.SectionHeader("Recent Reviews"))
                     addAll(
                         recentResult.map { review ->
@@ -34,8 +36,6 @@ class FeedViewModel(
                             )
                         }
                     )
-                    add(FeedItem.SectionHeader("Popular Albums"))
-                    addAll(popularResult)
                 }
 
                 _feedState.value = FeedState.Success(items)

@@ -67,12 +67,12 @@ fun SearchScreen(
     val isCompactLayout = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
     val navAlbumId by viewModel.navigationAlbumId
 
-    LaunchedEffect(navAlbumId) {
-        navAlbumId?.let { id ->
-            navController.navigate(Screen.AlbumDetail.createRoute(id))
-            viewModel.clearNavigation()
-        }
-    }
+//    LaunchedEffect(navAlbumId) {
+//        navAlbumId?.let { id ->
+//            navController.navigate(Screen.AlbumDetail.createRoute(id))
+//            viewModel.clearNavigation()
+//        }
+//    }
 
 
     if (isCompactLayout) {
@@ -85,7 +85,14 @@ fun SearchScreen(
 @Composable
 private fun CompactSearchLayout(navController: NavController, viewModel: SearchViewModel) {
     Column(Modifier.fillMaxSize()) {
-        SearchContent(navController, viewModel)
+        SearchContent(
+            navController = navController,
+            viewModel = viewModel,
+            onAlbumSelected = { album ->
+                viewModel.selectAlbum(album)
+                navController.navigate(Screen.AddReview.createRoute(album.id))
+            }
+        )
     }
 }
 
@@ -101,7 +108,7 @@ private fun ExpandedSearchLayout(
                 viewModel = viewModel,
                 onAlbumSelected = { album ->
                     viewModel.selectAlbum(album)
-                    viewModel.loadAlbumDetails(album.id)
+                    navController.navigate(Screen.AddReview.createRoute(album.id))
                 }
             )
         }
@@ -149,7 +156,7 @@ private fun SearchContent(
                     albums = searchState.results.filterIsInstance<Album>(),
                     onSelect = { album ->
                         // Use both artist and title from API result
-                        viewModel.handleAlbumSelection(album.artist, album.title)
+                        onAlbumSelected(album)
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
