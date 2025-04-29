@@ -51,11 +51,9 @@ import com.example.pitchapp.ui.screens.profile.LoginScreen
 import com.example.pitchapp.ui.screens.profile.SignUpScreen
 import com.example.pitchapp.viewmodel.AuthViewModel
 
-
 @Composable
 fun MainApp(
     feedViewModelFactory: FeedViewModelFactory,
-    reviewViewModelFactory: ReviewViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory
 ) {
@@ -64,196 +62,98 @@ fun MainApp(
     var darkTheme by remember { mutableStateOf(systemDarkTheme) }
     val authViewModel = viewModel<AuthViewModel>()
 
-    Scaffold(bottomBar = { BottomNavBar(navController) }) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Feed.route,
-            modifier = Modifier.padding(padding)
-        ) {
-            composable(Screen.Feed.route) {
-                FeedScreen(
-                    navController = navController,
-                    viewModel = viewModel<FeedViewModel>(factory = feedViewModelFactory),
-                    reviewViewModel = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
-                )
-            }
-            composable(Screen.Search.route) {
-                SearchScreen(
-                    navController = navController,
-                    viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory),
-                    reviewViewModel = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
-                )
-            }
-            composable(Screen.Results.route) {
-                ResultScreen(
-                    navController = navController,
-                    viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
-                )
-            }
-            composable(
-                route = Screen.AlbumDetail.route,
-                arguments = listOf(
-                    navArgument(Screen.AlbumDetail.ARG_ALBUM_ID) {
-                        type = NavType.StringType
-                    }
-                )
-            ) { backStackEntry ->
-                val albumId = backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
-                val viewModel: AlbumDetailViewModel = viewModel(
-                    factory = AlbumDetailViewModelFactory(
-                        musicRepository = MusicRepository(LastFmApi.service),
-                        reviewRepository = ReviewRepository()
-                    )
-                )
+    val reviewViewModelFactory = ReviewViewModelFactory(
+            reviewRepository = ReviewRepository(),
+            authViewModel = authViewModel
+        )
+
 
     PitchAppTheme(darkTheme = darkTheme) {
-        Scaffold(bottomBar = { BottomNavBar(navController) }) { padding ->
-
-            Column {
-                LogoHeader(darkTheme = darkTheme,
-                    onToggle = { darkTheme = it })
-
-
-                NavHost(
-                    navController = navController,
-                    startDestination = Screen.Feed.route,
-                    modifier = Modifier.padding(padding)
-                ) {
-                    composable(Screen.Feed.route) {
-                        FeedScreen(
-                            navController = navController,
-                            viewModel = viewModel<FeedViewModel>(factory = feedViewModelFactory)
-                        )
-                    }
-                    composable(Screen.Search.route) {
-                        SearchScreen(
-                            navController = navController,
-                            viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
-                        )
-                    }
-                    composable(Screen.Results.route) {
-                        ResultScreen(
-                            navController = navController,
-                            viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
-                        )
-                    }
-                    composable("login") {
-                        LoginScreen(
-                            navController = navController,
-                            authViewModel = authViewModel
-                        )
-                    }
-
-                    composable("signup") {
-                        SignUpScreen(
-                            navController = navController,
-                            authViewModel = authViewModel
-                        )
-                    }
-
-                    composable(
-                        route = Screen.AlbumDetail.route,
-                        arguments = listOf(
-                            navArgument(Screen.AlbumDetail.ARG_ALBUM_ID) {
-                                type = NavType.StringType
-                            }
-                        )
-                    ) { backStackEntry ->
-                        val albumId =
-                            backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
-                        val viewModel: AlbumDetailViewModel = viewModel(
-                            factory = AlbumDetailViewModelFactory(
-                                musicRepository = MusicRepository(LastFmApi.service),
-                                reviewRepository = ReviewRepository()
-                            )
-                        )
-
-                        if (albumId == null) {
-                            Text("Error: Missing album ID")
-                            return@composable
-                        }
-                        AlbumDetailScreen(
-                            albumId = albumId,
-                            viewModel = viewModel,
-                            navController = navController
-                        )
-                    }
-
-                    composable(Screen.AddReview.route) {
-                        val reviewVm = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
-                        val searchVm = viewModel<SearchViewModel>(factory = searchViewModelFactory)
-                        AddReviewScreen(
-                            navController = navController,
-                            reviewViewModel = reviewVm,
-                            searchViewModel = searchVm,
-
-                            )
-                    }
-
-
-                    composable(
-                        route = Screen.Profile.route,
-                        arguments = listOf(
-                            navArgument(Screen.Profile.ARG_USERNAME) {
-                                type = NavType.StringType
-                                defaultValue = Firebase.auth.currentUser?.uid ?: ""
-                                nullable = true
-                            }
-                        )
-                    ) { backStack ->
-                        val userId = backStack.arguments?.getString(Screen.Profile.ARG_USERNAME)
-                            ?: Firebase.auth.currentUser?.uid ?: ""
-                if (albumId == null) {
-                    Text("Error: Missing album ID")
-                    return@composable
+        Scaffold(
+            bottomBar = { BottomNavBar(navController) },
+            topBar = { LogoHeader(darkTheme = darkTheme, onToggle = { darkTheme = it }) }
+        ) { padding ->
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Feed.route,
+                modifier = Modifier.padding(padding)
+            ) {
+                composable(Screen.Feed.route) {
+                    FeedScreen(
+                        navController = navController,
+                        viewModel = viewModel(factory = feedViewModelFactory),
+                        reviewViewModel = viewModel(factory = reviewViewModelFactory)
+                    )
                 }
 
-
-
-                AlbumDetailScreen(
-                        albumId = albumId,
-                        viewModel = viewModel,
-                        reviewViewModel = viewModel<ReviewViewModel>(factory = reviewViewModelFactory),
-                        navController = navController
-
+                composable(Screen.Search.route) {
+                    SearchScreen(
+                        navController = navController,
+                        viewModel = viewModel(factory = searchViewModelFactory),
+                        reviewViewModel = viewModel(factory = reviewViewModelFactory)
                     )
+                }
 
-            }
-            composable(Screen.AddReview.route) {
-                val reviewVm = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
-                val searchVm = viewModel<SearchViewModel>(factory = searchViewModelFactory)
-                AddReviewScreen(
-                    navController = navController,
-                    reviewViewModel = reviewVm,
-                    searchViewModel = searchVm
-                )
-            }
-            composable(
-                route = Screen.Profile.route,
-                arguments = listOf(
-                    navArgument(Screen.Profile.ARG_USERNAME) {
+                composable(Screen.Results.route) {
+                    ResultScreen(
+                        navController = navController,
+                        viewModel = viewModel(factory = searchViewModelFactory)
+                    )
+                }
+
+                composable("login") {
+                    LoginScreen(navController, authViewModel)
+                }
+
+                composable("signup") {
+                    SignUpScreen(navController, authViewModel)
+                }
+
+                composable(
+                    route = Screen.AlbumDetail.route,
+                    arguments = listOf(navArgument(Screen.AlbumDetail.ARG_ALBUM_ID) { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val albumId = backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
+                    AlbumDetailScreen(
+                        albumId = albumId ?: "",
+                        viewModel = viewModel(factory = AlbumDetailViewModelFactory(
+                            MusicRepository(LastFmApi.service),
+                            ReviewRepository()
+                        )),
+                        reviewViewModel = viewModel(factory = reviewViewModelFactory),
+                        navController = navController
+                    )
+                }
+
+                composable(
+                    route = Screen.AddReview.route,
+                    arguments = listOf(navArgument(Screen.AddReview.ARG_ALBUM_ID) { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val albumId = backStackEntry.arguments?.getString(Screen.AddReview.ARG_ALBUM_ID)
+                    AddReviewScreen(
+                        albumId = albumId,
+                        navController = navController,
+                        reviewViewModel = viewModel(factory = reviewViewModelFactory),
+                        searchViewModel = viewModel(factory = searchViewModelFactory),
+                        authViewModel = authViewModel,
+                        musicRepository = MusicRepository(LastFmApi.service)
+                    )
+                }
+
+                composable(
+                    route = Screen.Profile.route,
+                    arguments = listOf(navArgument(Screen.Profile.ARG_USERNAME) {
                         type = NavType.StringType
-                        defaultValue = Firebase.auth.currentUser?.uid ?: ""
                         nullable = true
-                    }
-                )
-            ) { backStack ->
-                val userId = backStack.arguments?.getString(Screen.Profile.ARG_USERNAME)
-                    ?: Firebase.auth.currentUser?.uid ?: ""
-
-                        val profileVm = viewModel<ProfileViewModel>(
-                            factory = profileViewModelFactory,
-                            key = userId
-                        )
-
-                        ProfileScreen(
-                            navController = navController,
-                            viewModel = profileVm,
-                            userId = userId,
-                            authViewModel = authViewModel
-                        )
-                    }
-
+                    })
+                ) { backStackEntry ->
+                    val username = backStackEntry.arguments?.getString(Screen.Profile.ARG_USERNAME)
+                    ProfileScreen(
+                        navController = navController,
+                        viewModel = viewModel(factory = profileViewModelFactory),
+                        userId = username ?: Firebase.auth.currentUser?.uid ?: "",
+                        authViewModel = authViewModel
+                    )
                 }
             }
         }

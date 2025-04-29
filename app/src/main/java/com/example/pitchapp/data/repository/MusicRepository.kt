@@ -163,27 +163,6 @@ class MusicRepository @Inject constructor(
             Result.Error(e)
         }
 
-    suspend fun saveDetailedAlbum(artist: String, title: String): Result<Album> {
-        val albumId = generateAlbumId(artist, title)
-
-        return when (val existing = getAlbumFromFirestore(albumId)) {
-            is Result.Success -> existing
-            is Result.Error -> {
-                when (val apiResult = getAlbumInfo(artist = artist, album = title)) {
-                    is Result.Success -> {
-                        val album = apiResult.data.copy(id = albumId)
-                        saveAlbumToFirestore(album).let {
-                            Result.Success(album)
-                        }
-                    }
-                    is Result.Error -> apiResult
-                    else -> Result.Error(IllegalStateException("Unexpected API result"))
-                }
-            }
-            else -> Result.Error(IllegalStateException("Unexpected existing result"))
-        }
-    }
-
     suspend fun getOrFetchAlbum(artist: String, title: String): Result<Album> {
         val albumId = generateAlbumId(artist, title)
 
@@ -204,22 +183,5 @@ class MusicRepository @Inject constructor(
         }
     }
 
-    private suspend fun fetchAndSaveAlbum(
-        artist: String,
-        title: String,
-        albumId: String
-    ): Result<Album> {
-        return when (val apiResult = getAlbumInfo(artist = artist, album = title)) {
-            is Result.Success -> {
-                val album = apiResult.data.copy(id = albumId)
-                saveAlbumToFirestore(album).let {
-                    Result.Success(album)
-                }
-            }
-            is Result.Error -> apiResult
-            else -> Result.Error(IllegalStateException("Unexpected API result"))
-
-        }
-    }
 
 }

@@ -21,7 +21,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pitchapp.data.model.FeedItem
 import com.example.pitchapp.ui.components.AlbumCard
 import com.example.pitchapp.ui.components.ReviewCard
-import com.example.pitchapp.ui.components.SectionHeader
 import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ReviewViewModel
@@ -86,8 +85,8 @@ private fun FeedListContent(
 
                 is FeedItem.ReviewItem ->
                     ReviewCard(
-                        review = item.review,
-                        onLikeClicked = { reviewViewModel.toggleLike(item.review) },
+                        reviewItem = item,
+                        onClick = { navController.navigate("album/${item.review.albumId}") },
                     )
 
                 is FeedItem.AlbumItem ->

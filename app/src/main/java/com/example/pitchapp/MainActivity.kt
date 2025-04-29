@@ -22,6 +22,7 @@ import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ProfileRepository
 import com.example.pitchapp.data.repository.ReviewRepository
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
+import com.example.pitchapp.viewmodel.AuthViewModel
 import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ProfileViewModel
 import com.example.pitchapp.viewmodel.ReviewViewModel
@@ -63,15 +64,14 @@ class FeedViewModelFactory(
 
 // ReviewViewModelFactory
 class ReviewViewModelFactory(
-    private val repository: ReviewRepository
+    private val reviewRepository: ReviewRepository,
+    private val authViewModel: AuthViewModel
 ) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(
-        modelClass: Class<T>,
-    ): T {
-        return ReviewViewModel(
-            reviewRepository = repository,
-        ) as T
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ReviewViewModel::class.java)) {
+            return ReviewViewModel(reviewRepository, authViewModel) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 
@@ -118,17 +118,14 @@ class MainActivity : ComponentActivity() {
 
         // Repository initialization
         val reviewRepository = ReviewRepository()
-
         val feedRepository = FeedRepository(
             reviewRepository = reviewRepository,
             musicRepository = musicRepository,
         )
-
         val profileRepository = ProfileRepository()
-
         // ViewModel factories
+
         val feedViewModelFactory = FeedViewModelFactory(feedRepository)
-        val reviewViewModelFactory = ReviewViewModelFactory(reviewRepository)
         val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
         val profileViewModelFactory = ProfileViewModelFactory(profileRepository)
 
@@ -138,10 +135,8 @@ class MainActivity : ComponentActivity() {
                     musicRepository = musicRepository,
                     reviewRepository = reviewRepository,
                     feedViewModelFactory = feedViewModelFactory,
-                    reviewViewModelFactory = reviewViewModelFactory,
                     searchViewModelFactory = searchViewModelFactory,
-                    profileViewModelFactory = profileViewModelFactory,
-
+                    profileViewModelFactory = profileViewModelFactory
                 )
             }
         }
@@ -153,7 +148,6 @@ private fun FirebaseAuthHandler(
     musicRepository: MusicRepository,
     reviewRepository: ReviewRepository,
     feedViewModelFactory: FeedViewModelFactory,
-    reviewViewModelFactory: ReviewViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
 
@@ -162,10 +156,8 @@ private fun FirebaseAuthHandler(
 
     MainApp(
         feedViewModelFactory = feedViewModelFactory,
-        reviewViewModelFactory = reviewViewModelFactory,
         searchViewModelFactory = searchViewModelFactory,
-        profileViewModelFactory = profileViewModelFactory,
-
+        profileViewModelFactory = profileViewModelFactory
     )
     }
 

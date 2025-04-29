@@ -67,14 +67,6 @@ fun SearchScreen(
     val context = LocalContext.current
     val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
     val isCompactLayout = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
-    val navAlbumId by viewModel.navigationAlbumId
-
-//    LaunchedEffect(navAlbumId) {
-//        navAlbumId?.let { id ->
-//            navController.navigate(Screen.AlbumDetail.createRoute(id))
-//            viewModel.clearNavigation()
-//        }
-//    }
 
 
     if (isCompactLayout) {
@@ -88,11 +80,10 @@ fun SearchScreen(
 private fun CompactSearchLayout(navController: NavController, viewModel: SearchViewModel, reviewViewModel: ReviewViewModel) {
     Column(Modifier.fillMaxSize()) {
         SearchContent(
-            navController = navController,
             viewModel = viewModel,
             onAlbumSelected = { album ->
                 viewModel.selectAlbum(album)
-                navController.navigate(Screen.AddReview.createRoute(album.id))
+                navController.navigate(Screen.AlbumDetail.createRoute(album.id))
             }
         )
     }
@@ -107,27 +98,24 @@ private fun ExpandedSearchLayout(
     Row(Modifier.fillMaxSize()) {
         Column(Modifier.weight(0.4f)) {
             SearchContent(
-                navController = navController,
                 viewModel = viewModel,
                 onAlbumSelected = { album ->
                     viewModel.selectAlbum(album)
-                    navController.navigate(Screen.AddReview.createRoute(album.id))
                 }
             )
         }
 
         Column(Modifier.weight(0.6f)) {
-            DetailPane(viewModel, reviewViewModel)
+            DetailPane(viewModel, navController)
         }
     }
 }
 
 @Composable
 private fun SearchContent(
-    navController: NavController,
     viewModel: SearchViewModel,
     onAlbumSelected: (Album) -> Unit = { album ->
-        viewModel.handleAlbumSelection(album.artist, album.title)
+        viewModel.selectAlbum(album)
     }
 ) {
     val searchState by viewModel.searchState.collectAsState()
@@ -158,7 +146,6 @@ private fun SearchContent(
                 SearchViewModel.SearchType.ALBUM -> AlbumResultsList(
                     albums = searchState.results.filterIsInstance<Album>(),
                     onSelect = { album ->
-                        // Use both artist and title from API result
                         onAlbumSelected(album)
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -171,7 +158,7 @@ private fun SearchContent(
 @Composable
 private fun DetailPane(
     viewModel: SearchViewModel,
-    reviewViewModel: ReviewViewModel
+    navController: NavController
 ) {
     val searchState by viewModel.searchState.collectAsState()
 
@@ -189,11 +176,12 @@ private fun DetailPane(
                         album = album,
                         reviews = reviews,
                         modifier = Modifier.weight(1f),
-                        viewModel = reviewViewModel)
+                        navController = navController
+                    )
+
 
                                 Button(
-                                onClick = {
-                                    viewModel.handleAlbumSelection(album.artist, album.title)
+                                onClick = { /* TODO */
                                 },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -241,7 +229,7 @@ fun AlbumDetailContent(
     album: Album,
     reviews: List<Review>,
     modifier: Modifier = Modifier,
-    viewModel: ReviewViewModel
+    navController: NavController
 ) {
     Column(modifier.padding(16.dp)) {
         Text(album.title, style = MaterialTheme.typography.headlineSmall)
@@ -263,8 +251,11 @@ fun AlbumDetailContent(
         LazyColumn {
             items(reviews) { review ->
                 ReviewCard(
-                    review = review,
-                    onLikeClicked = { viewModel.toggleLike(review) }
+                    reviewItem = FeedItem.ReviewItem(review, album),
+                    onClick = {
+                        navController.navigate(
+                            Screen.Profile.createRoute(review.username))
+                    }
                 )
             }
         }
