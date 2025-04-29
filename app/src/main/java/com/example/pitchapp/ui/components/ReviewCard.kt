@@ -39,43 +39,89 @@ import com.example.pitchapp.ui.screens.review.StarRating
 
 @Composable
 fun ReviewCard(
-    review: Review,
-    onLikeClicked: () -> Unit,
+    reviewItem: FeedItem.ReviewItem,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = review.username,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.width(8.dp))
-                StarRating(
-                    rating = review.rating,
-                    onRatingChange = {},
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
-            Text(review.content)
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(onClick = onLikeClicked) {
-                    Icon(
-                        imageVector = if (review.likes.contains("admin"))
-                            Icons.Filled.Favorite else Icons.Outlined.Favorite,
-                        contentDescription = "Like",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Text("${review.likes.size} likes")
-            }
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+        .clickable(onClick = onClick),
+    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    shape = MaterialTheme.shapes.medium
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+        verticalAlignment = Alignment.Top
+        ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+            .clip(MaterialTheme.shapes.small)
+        ) {
+        reviewItem.album?.artworkUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } ?: run {
+            Icon(
+                imageVector = Icons.Default.Email,
+                contentDescription = "Review placeholder",
+                modifier = Modifier.fillMaxSize(),
+                tint = MaterialTheme.colorScheme.secondary
+            )
         }
+    }
+
+        Spacer(Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = reviewItem.review.username,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = reviewItem.review.timestamp.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            reviewItem.album?.title?.let { title ->
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            RatingDisplay(
+                rating = reviewItem.review.rating.toFloat(),
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+
+            Text(
+                text = reviewItem.review.content,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+    }
     }
 }

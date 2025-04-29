@@ -22,12 +22,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.pitchapp.R
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Artist
+import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.SearchViewModel
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,9 +66,9 @@ fun AlbumSearchField(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                when {
-                    searchState.isLoading ->
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            when {
+                searchState.isLoading ->
+                    SpinningRecord()
 
                     searchState.error != null ->
                         ErrorMessage(
@@ -98,19 +100,21 @@ fun AlbumSearchField(
                         )
                     }
 
-                    Text(
-                        text = "Albums by ${selectedArtist!!.name}",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                Text(
+                    text = "Albums by ${selectedArtist!!.name}",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+
+                )
+            }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                when {
-                    searchState.isLoading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                    }
+            when {
+                searchState.isLoading -> {
+                    SpinningRecord()
+                }
 
                     searchState.error != null -> {
                         ErrorMessage(

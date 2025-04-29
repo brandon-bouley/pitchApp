@@ -46,6 +46,10 @@ private fun ArtistItem(
     modifier: Modifier = Modifier
 ) {
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
@@ -66,6 +70,10 @@ private fun AlbumItem(
     modifier: Modifier = Modifier
 ) {
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()

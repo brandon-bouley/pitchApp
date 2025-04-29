@@ -29,7 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -81,13 +81,24 @@ fun AlbumDetailScreen(
                 .padding(padding)
         ) {
             when {
-                isLoading -> CircularProgressIndicator()
-                error != null -> Text("Error: $error", color = MaterialTheme.colorScheme.error)
-                else -> LazyColumn(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    item { AlbumHeader(album = album!!) }
+                isLoading -> {
+                    SpinningRecord()
+                }
+
+                error != null -> {
+                    Text("Error loading album: $error", color = MaterialTheme.colorScheme.error)
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            AlbumHeader(album = album!!)
+                        }
 
                     if (album != null) {
                         if (album.tracks.isNotEmpty()) {
@@ -175,9 +186,14 @@ private fun StatItem(label: String, value: String) {
 @Composable
 private fun TrackItem(track: Album.Track) {
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)) {
+            .padding(vertical = 4.dp)
+    ){
         Row(
             modifier = Modifier
                 .padding(12.dp)

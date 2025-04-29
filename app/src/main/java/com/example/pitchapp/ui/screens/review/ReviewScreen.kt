@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +28,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.pitchapp.ui.components.AlbumSearchField
+import com.example.pitchapp.ui.navigation.Screen
+import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
 
@@ -95,20 +96,23 @@ fun AddReviewScreen(
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = {
-                    // At submit time, ReviewVM already knows selectedAlbum.artist/title
                     reviewViewModel.submitReview {
-                        navController.popBackStack()
+                        val albumId = uiState.selectedAlbum?.id
+                        if (albumId != null) {
+                            navController.navigate(Screen.AlbumDetail.createRoute(albumId))
+                        }
                     }
                 },
                 enabled = uiState.isFormValid && !uiState.isSubmitting,
                 modifier = Modifier.align(Alignment.End)
             ) {
                 if (uiState.isSubmitting) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                    SpinningRecord()
                 } else {
                     Text("Submit Review")
                 }
             }
+
 
             uiState.errorMessage?.let {
                 Text(

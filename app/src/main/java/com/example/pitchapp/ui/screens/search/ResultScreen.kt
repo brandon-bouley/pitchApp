@@ -28,6 +28,14 @@ import com.example.pitchapp.data.model.Artist
 import com.example.pitchapp.data.model.FeedItem
 import com.example.pitchapp.ui.components.AlbumCard
 import com.example.pitchapp.viewmodel.SearchViewModel
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.painterResource
+import com.example.pitchapp.R
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultScreen(navController: NavController, viewModel: SearchViewModel = viewModel()) {
@@ -71,5 +79,34 @@ fun ResultScreen(navController: NavController, viewModel: SearchViewModel = view
                 }
             }
         }
+    }
+}
+@Composable
+fun SpinningRecord() {
+    // Infinite rotation animation
+    val infiniteTransition = rememberInfiniteTransition()
+
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        )
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.record_icon),
+            contentDescription = "Spinning Record",
+            modifier = Modifier
+                .rotate(angle)
+                .size(100.dp),
+        )
     }
 }

@@ -38,6 +38,10 @@ fun AlbumCard(
     showDetailedInfo: Boolean = false
 ) {
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
         modifier = modifier
             .fillMaxWidth()
             .padding(8.dp)
