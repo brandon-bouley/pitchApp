@@ -171,7 +171,6 @@ fun MainApp(
                         ProfileScreen(
                             navController = navController,
                             viewModel = profileVm,
-                            userId = userId,
                             authViewModel = authViewModel
                         )
                     }
