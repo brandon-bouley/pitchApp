@@ -49,7 +49,7 @@ sealed class Screen(val route: String) {
 
     object Profile : Screen("profile/{username}") {
         const val ARG_USERNAME = "username"
-        fun createRoute(username: String) = "profile/$username"
+        fun createRoute(username: String?) = "profile/${username ?: ""}"
     }
 }
 

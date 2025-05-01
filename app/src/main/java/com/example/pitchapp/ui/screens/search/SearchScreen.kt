@@ -54,6 +54,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.LaunchedEffect
+import com.example.pitchapp.viewmodel.ReviewViewModel
 
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
@@ -61,36 +62,28 @@ import androidx.compose.runtime.LaunchedEffect
 fun SearchScreen(
     navController: NavController,
     viewModel: SearchViewModel,
+    reviewViewModel: ReviewViewModel
 ) {
     val context = LocalContext.current
     val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
     val isCompactLayout = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
-    val navAlbumId by viewModel.navigationAlbumId
-
-//    LaunchedEffect(navAlbumId) {
-//        navAlbumId?.let { id ->
-//            navController.navigate(Screen.AlbumDetail.createRoute(id))
-//            viewModel.clearNavigation()
-//        }
-//    }
 
 
     if (isCompactLayout) {
-        CompactSearchLayout(navController, viewModel)
+        CompactSearchLayout(navController, viewModel, reviewViewModel)
     } else {
-        ExpandedSearchLayout(navController, viewModel)
+        ExpandedSearchLayout(navController, viewModel, reviewViewModel)
     }
 }
 
 @Composable
-private fun CompactSearchLayout(navController: NavController, viewModel: SearchViewModel) {
+private fun CompactSearchLayout(navController: NavController, viewModel: SearchViewModel, reviewViewModel: ReviewViewModel) {
     Column(Modifier.fillMaxSize()) {
         SearchContent(
-            navController = navController,
             viewModel = viewModel,
             onAlbumSelected = { album ->
                 viewModel.selectAlbum(album)
-                navController.navigate(Screen.AddReview.createRoute(album.id))
+                navController.navigate(Screen.AlbumDetail.createRoute(album.id))
             }
         )
     }
@@ -99,32 +92,30 @@ private fun CompactSearchLayout(navController: NavController, viewModel: SearchV
 @Composable
 private fun ExpandedSearchLayout(
     navController: NavController,
-    viewModel: SearchViewModel
+    viewModel: SearchViewModel,
+    reviewViewModel: ReviewViewModel
 ) {
     Row(Modifier.fillMaxSize()) {
         Column(Modifier.weight(0.4f)) {
             SearchContent(
-                navController = navController,
                 viewModel = viewModel,
                 onAlbumSelected = { album ->
                     viewModel.selectAlbum(album)
-                    navController.navigate(Screen.AddReview.createRoute(album.id))
                 }
             )
         }
 
         Column(Modifier.weight(0.6f)) {
-            DetailPane(viewModel)
+            DetailPane(viewModel, navController)
         }
     }
 }
 
 @Composable
 private fun SearchContent(
-    navController: NavController,
     viewModel: SearchViewModel,
     onAlbumSelected: (Album) -> Unit = { album ->
-        viewModel.handleAlbumSelection(album.artist, album.title)
+        viewModel.selectAlbum(album)
     }
 ) {
     val searchState by viewModel.searchState.collectAsState()
@@ -155,7 +146,6 @@ private fun SearchContent(
                 SearchViewModel.SearchType.ALBUM -> AlbumResultsList(
                     albums = searchState.results.filterIsInstance<Album>(),
                     onSelect = { album ->
-                        // Use both artist and title from API result
                         onAlbumSelected(album)
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -167,7 +157,8 @@ private fun SearchContent(
 
 @Composable
 private fun DetailPane(
-    viewModel: SearchViewModel
+    viewModel: SearchViewModel,
+    navController: NavController
 ) {
     val searchState by viewModel.searchState.collectAsState()
 
@@ -185,11 +176,12 @@ private fun DetailPane(
                         album = album,
                         reviews = reviews,
                         modifier = Modifier.weight(1f),
-                        viewModel = viewModel)
+                        navController = navController
+                    )
+
 
                                 Button(
-                                onClick = {
-                                    viewModel.handleAlbumSelection(album.artist, album.title)
+                                onClick = { /* TODO */
                                 },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -237,7 +229,7 @@ fun AlbumDetailContent(
     album: Album,
     reviews: List<Review>,
     modifier: Modifier = Modifier,
-    viewModel: SearchViewModel
+    navController: NavController
 ) {
     Column(modifier.padding(16.dp)) {
         Text(album.title, style = MaterialTheme.typography.headlineSmall)
@@ -260,7 +252,10 @@ fun AlbumDetailContent(
             items(reviews) { review ->
                 ReviewCard(
                     reviewItem = FeedItem.ReviewItem(review, album),
-                    onClick = { viewModel.handleAlbumSelection(album.artist, album.title) }
+                    onClick = {
+                        navController.navigate(
+                            Screen.Profile.createRoute(review.username))
+                    }
                 )
             }
         }

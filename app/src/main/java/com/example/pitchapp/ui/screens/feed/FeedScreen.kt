@@ -21,12 +21,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pitchapp.data.model.FeedItem
 import com.example.pitchapp.ui.components.AlbumCard
 import com.example.pitchapp.ui.components.ReviewCard
-import com.example.pitchapp.ui.components.SectionHeader
 import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.FeedViewModel
+import com.example.pitchapp.viewmodel.ReviewViewModel
 
 @Composable
-fun FeedScreen(navController: NavController, viewModel: FeedViewModel = viewModel()) {
+fun FeedScreen(navController: NavController, viewModel: FeedViewModel = viewModel(), reviewViewModel: ReviewViewModel) {
     val feedState by viewModel.feedState.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -47,7 +47,8 @@ fun FeedScreen(navController: NavController, viewModel: FeedViewModel = viewMode
             is FeedViewModel.FeedState.Success ->
                 FeedListContent(
                     items = state.items,
-                    navController = navController
+                    navController = navController,
+                    reviewViewModel = reviewViewModel
                 )
         }
     }
@@ -56,7 +57,8 @@ fun FeedScreen(navController: NavController, viewModel: FeedViewModel = viewMode
 @Composable
 private fun FeedListContent(
     items: List<FeedItem>,
-    navController: NavController
+    navController: NavController,
+    reviewViewModel: ReviewViewModel
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(
@@ -84,7 +86,7 @@ private fun FeedListContent(
                 is FeedItem.ReviewItem ->
                     ReviewCard(
                         reviewItem = item,
-                        onClick = { navController.navigate("album/${item.album?.id}") }
+                        onClick = { navController.navigate("album/${item.review.albumId}") },
                     )
 
                 is FeedItem.AlbumItem ->

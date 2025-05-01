@@ -11,7 +11,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 
 class ReviewRepository {
-    private val db = Firebase.firestore("pitchdb")
+    private val db = Firebase.firestore
     private val reviewsRef = db.collection("reviews")
     private val albumsRef = db.collection("albums")
 
@@ -91,29 +91,51 @@ class ReviewRepository {
         }
     }
 
-    // Helper extension to convert QuerySnapshot to Review list
-    private fun QuerySnapshot.toReviews(): List<Review> {
-        return this.documents.mapNotNull { doc ->
-            try {
-                val albumId = doc.getString("albumId") ?: ""
-                val userId = doc.getString("userId") ?: ""
-                val username = doc.getString("username") ?: ""
-                val content = doc.getString("content") ?: ""
-                val rating = doc.getDouble("rating")?.toFloat() ?: 0f
-                val timestamp = doc.getTimestamp("timestamp") ?: Timestamp.now()
+    suspend fun toggleLike(reviewId: String, userId: String): Result<Unit> {
+        return try {
+            val reviewRef = reviewsRef.document(reviewId)
+            db.runTransaction { transaction ->
+                val snapshot = transaction.get(reviewRef)
+                val currentLikes = snapshot.get("likes") as? List<String> ?: emptyList()
 
-                Review(
-                    id = doc.id,
-                    albumId = albumId,
-                    userId = userId,
-                    username = username,
-                    content = content,
-                    rating = rating,
-                    timestamp = timestamp
+                val newLikes = if (userId in currentLikes) {
+                    currentLikes - userId
+                } else {
+                    currentLikes + userId
+                }
+
+                transaction.update(reviewRef,
+                    mapOf(
+                        "likes" to newLikes,
+                        "likeCount" to newLikes.size
+                    )
                 )
-            } catch (e: Exception) {
-                null
-            }
+            }.await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
         }
+    }
+
+    // Helper extension to convert QuerySnapshot to Review list
+    private fun DocumentSnapshot.toReview(): Review? {
+        return try {
+            Review(
+                id = id,
+                albumId = getString("albumId") ?: "",
+                userId = getString("userId") ?: "",
+                username = getString("username") ?: "",
+                content = getString("content") ?: "",
+                rating = getDouble("rating")?.toFloat() ?: 0f,
+                timestamp = getTimestamp("timestamp") ?: Timestamp.now(),
+                likes = get("likes") as? List<String> ?: emptyList()
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun QuerySnapshot.toReviews(): List<Review> {
+        return this.documents.mapNotNull { it.toReview() }
     }
 }

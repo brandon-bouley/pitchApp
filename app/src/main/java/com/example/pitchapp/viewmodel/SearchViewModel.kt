@@ -37,9 +37,6 @@ class SearchViewModel(
     private val _artistAlbums = MutableStateFlow<List<Album>>(emptyList())
     val artistAlbums: StateFlow<List<Album>> = _artistAlbums.asStateFlow()
 
-    private val _navigationAlbumId = mutableStateOf<String?>(null)
-    val navigationAlbumId: State<String?> get() = _navigationAlbumId
-
     private val _isAlbumSelected = MutableStateFlow(false)
     val isAlbumSelected: StateFlow<Boolean> = _isAlbumSelected.asStateFlow()
 
@@ -127,29 +124,6 @@ class SearchViewModel(
                 else -> Result.Error(IllegalStateException("Unexpected result type"))
             }
         }
-    }
-
-    fun handleAlbumSelection(artist: String, title: String) {
-        viewModelScope.launch {
-            _searchState.update { it.copy(isLoading = true, error = null) }
-
-            when (val result = musicRepository.getOrFetchAlbum(artist, title)) {
-                is Result.Success -> {
-                    _navigationAlbumId.value = result.data.id
-                }
-                is Result.Error -> {
-                    _searchState.update {
-                        it.copy(error = "Album load failed: ${result.exception.message}")
-                    }
-                }
-                else -> Result.Error(IllegalStateException("Unexpected result type"))
-            }
-            _searchState.update { it.copy(isLoading = false) }
-        }
-    }
-
-    fun clearNavigation() {
-        _navigationAlbumId.value = null
     }
 
 
