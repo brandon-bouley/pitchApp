@@ -28,15 +28,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavController
 import com.example.pitchapp.data.model.FeedItem
 import com.example.pitchapp.ui.components.ReviewCard
@@ -70,10 +73,28 @@ fun AlbumDetailScreen(
             TopAppBar(
                 title = { Text("Album Details") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = {
+                        navController.navigate(Screen.Search.route) {
+                            popUpTo("search_root") {
+                                inclusive = true
+                            }
+                        }
+                        viewModel.clearState()
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 }
+            )
+        },
+                floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    navController.navigate(Screen.AddReview.createRoute(albumId)) {
+                        launchSingleTop = true
+                    }
+                },
+                icon = { Icon(Icons.Default.Add, "Add Review") },
+                text = { Text("Add Review") }
             )
         }
     ) { padding ->
@@ -83,32 +104,46 @@ fun AlbumDetailScreen(
                 .padding(padding)
         ) {
             when {
-                isLoading -> CircularProgressIndicator()
+                isLoading -> SpinningRecord()
                 error != null -> Text("Error: $error", color = MaterialTheme.colorScheme.error)
                 else -> LazyColumn(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    item { AlbumHeader(album = album!!) }
+                    // Safe access to album
+                    album?.let { nonNullAlbum ->
+                        item { AlbumHeader(album = nonNullAlbum) }
 
-                    if (album != null) {
-                        if (album.tracks.isNotEmpty()) {
+                        if (nonNullAlbum.tracks.isNotEmpty()) {
                             item { Text("Track List", style = MaterialTheme.typography.titleLarge) }
-                            items(album.tracks) { track ->
+                            items(nonNullAlbum.tracks) { track ->
                                 TrackItem(track)
                             }
                         }
-                    }
 
-                    item { Text("Reviews", style = MaterialTheme.typography.titleLarge) }
-                    items(reviews) { review ->
-                        ReviewCard(
-                            reviewItem = FeedItem.ReviewItem(review, review.albumDetails),
-                            onClick = {
-                                navController.navigate(
-                                    Screen.Profile.createRoute(review.username))
-                            },
-                        )
+                        item { Text("Reviews", style = MaterialTheme.typography.titleLarge) }
+                        items(reviews) { review ->
+                            // Ensure review.albumDetails is not null
+                            ReviewCard(
+                                reviewItem = FeedItem.ReviewItem(
+                                    review,
+                                    review.albumDetails ?: nonNullAlbum // Fallback to current album
+                                ),
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.Profile.createRoute(review.username)
+                                    )
+                                },
+                            )
+                        }
+                    } ?: run {
+                        item {
+                            Text(
+                                "Album information unavailable",
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }

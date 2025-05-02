@@ -45,6 +45,12 @@ class AlbumDetailViewModel(
         albumId?.let { loadAlbumDetails(it) }
     }
 
+    fun clearState() {
+        _albumDetails.value = null
+        _reviews.value = emptyList()
+        _error.value = null
+    }
+
     fun loadAlbumDetails(albumId: String) {
         viewModelScope.launch {
             _isLoading.value = true

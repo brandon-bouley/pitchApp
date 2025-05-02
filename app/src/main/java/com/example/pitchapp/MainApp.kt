@@ -29,6 +29,7 @@ import com.example.pitchapp.ui.screens.search.SearchScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import androidx.navigation.navigation
 import com.example.pitchapp.data.local.PitchDatabase
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.remote.LastFmApi
@@ -85,20 +86,60 @@ fun MainApp(
                         reviewViewModel = viewModel(factory = reviewViewModelFactory)
                     )
                 }
+                navigation(
+                    startDestination = Screen.Search.route,
+                    route = "search_root"
+                ) {
+                    composable(Screen.Search.route) {
+                        SearchScreen(
+                            navController = navController,
+                            viewModel = viewModel(factory = searchViewModelFactory),
+                            reviewViewModel = viewModel(factory = reviewViewModelFactory)
+                        )
+                    }
 
-                composable(Screen.Search.route) {
-                    SearchScreen(
-                        navController = navController,
-                        viewModel = viewModel(factory = searchViewModelFactory),
-                        reviewViewModel = viewModel(factory = reviewViewModelFactory)
-                    )
-                }
+                    composable(Screen.Results.route) {
+                        ResultScreen(
+                            navController = navController,
+                            viewModel = viewModel(factory = searchViewModelFactory)
+                        )
+                    }
 
-                composable(Screen.Results.route) {
-                    ResultScreen(
-                        navController = navController,
-                        viewModel = viewModel(factory = searchViewModelFactory)
-                    )
+                    composable(
+                        route = Screen.AlbumDetail.route,
+                        arguments = listOf(navArgument(Screen.AlbumDetail.ARG_ALBUM_ID) {
+                            type = NavType.StringType
+                        })
+                    ) { backStackEntry ->
+                        val albumId =
+                            backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
+                        AlbumDetailScreen(
+                            albumId = albumId ?: "",
+                            viewModel = viewModel(
+                                factory = AlbumDetailViewModelFactory(
+                                    MusicRepository(LastFmApi.service),
+                                    ReviewRepository()
+                                )
+                            ),
+                            reviewViewModel = viewModel(factory = reviewViewModelFactory),
+                            navController = navController
+                        )
+                    }
+
+                    composable(
+                        route = Screen.AddReview.route,
+                        arguments = listOf(navArgument(Screen.AddReview.ARG_ALBUM_ID) { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val albumId = backStackEntry.arguments?.getString(Screen.AddReview.ARG_ALBUM_ID)
+                        AddReviewScreen(
+                            albumId = albumId,
+                            navController = navController,
+                            reviewViewModel = viewModel(factory = reviewViewModelFactory),
+                            searchViewModel = viewModel(factory = searchViewModelFactory),
+                            authViewModel = authViewModel,
+                            musicRepository = MusicRepository(LastFmApi.service)
+                        )
+                    }
                 }
 
                 composable("login") {
@@ -109,36 +150,7 @@ fun MainApp(
                     SignUpScreen(navController, authViewModel)
                 }
 
-                composable(
-                    route = Screen.AlbumDetail.route,
-                    arguments = listOf(navArgument(Screen.AlbumDetail.ARG_ALBUM_ID) { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val albumId = backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
-                    AlbumDetailScreen(
-                        albumId = albumId ?: "",
-                        viewModel = viewModel(factory = AlbumDetailViewModelFactory(
-                            MusicRepository(LastFmApi.service),
-                            ReviewRepository()
-                        )),
-                        reviewViewModel = viewModel(factory = reviewViewModelFactory),
-                        navController = navController
-                    )
-                }
 
-                composable(
-                    route = Screen.AddReview.route,
-                    arguments = listOf(navArgument(Screen.AddReview.ARG_ALBUM_ID) { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val albumId = backStackEntry.arguments?.getString(Screen.AddReview.ARG_ALBUM_ID)
-                    AddReviewScreen(
-                        albumId = albumId,
-                        navController = navController,
-                        reviewViewModel = viewModel(factory = reviewViewModelFactory),
-                        searchViewModel = viewModel(factory = searchViewModelFactory),
-                        authViewModel = authViewModel,
-                        musicRepository = MusicRepository(LastFmApi.service)
-                    )
-                }
 
                 composable(
                     route = Screen.Profile.route,
