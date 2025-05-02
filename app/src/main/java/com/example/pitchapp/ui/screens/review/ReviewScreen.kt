@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.pitchapp.data.repository.MusicRepository
+import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.ui.components.AlbumSearchField
 import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.ui.screens.search.SpinningRecord
@@ -38,6 +39,7 @@ import com.example.pitchapp.data.model.Result
 import com.example.pitchapp.viewmodel.AuthViewModel
 
 
+//set selected track to null somewhere
 @Composable
 fun AddReviewScreen(
     navController: NavController,
@@ -46,6 +48,7 @@ fun AddReviewScreen(
     authViewModel: AuthViewModel,
     musicRepository: MusicRepository,
     albumId: String?
+
 ) {
     val uiState by reviewViewModel.uiState.collectAsState()
     val loadedAlbum by searchViewModel.selectedAlbum.collectAsState()
@@ -54,6 +57,7 @@ fun AddReviewScreen(
     LaunchedEffect(loadedAlbum) {
         loadedAlbum?.let { reviewViewModel.setSelectedAlbum(it) }
     }
+
 
     LaunchedEffect(albumId) {
         albumId?.let {
@@ -78,22 +82,23 @@ fun AddReviewScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Selected Album:", style = MaterialTheme.typography.titleMedium)
-            uiState.selectedAlbum?.let { album ->
-                Text(
-                    text = "${album.title} by ${album.artist}",
-                    style = MaterialTheme.typography.bodyMedium
+                Text("Selected Album:", style = MaterialTheme.typography.titleMedium)
+                uiState.selectedAlbum?.let { album ->
+                    Text(
+                        text = "${album.title} by ${album.artist}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } ?: Text("No album selected", style = MaterialTheme.typography.bodyMedium)
+
+                Spacer(Modifier.height(8.dp))
+
+
+                AlbumSearchField(
+                    viewModel = searchViewModel,
+                    onAlbumSelected = { searchViewModel.selectAlbum(it) },
+                    modifier = Modifier.fillMaxWidth()
                 )
-            } ?: Text("No album selected", style = MaterialTheme.typography.bodyMedium)
 
-            Spacer(Modifier.height(8.dp))
-
-
-            AlbumSearchField(
-                viewModel       = searchViewModel,
-                onAlbumSelected = { searchViewModel.selectAlbum(it) },
-                modifier        = Modifier.fillMaxWidth()
-            )
 
             Spacer(Modifier.height(16.dp))
             Text("Rating:", style = MaterialTheme.typography.titleMedium)

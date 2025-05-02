@@ -3,7 +3,9 @@ package com.example.pitchapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pitchapp.data.model.FeedItem
+import com.example.pitchapp.data.remote.LastFmService
 import com.example.pitchapp.data.repository.FeedRepository
+import com.example.pitchapp.data.repository.MusicRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,6 +48,24 @@ class FeedViewModel(
             }
         }
     }
+//    fun loadRandomTopTrack() {
+//        viewModelScope.launch {
+//            try {
+//                val topTracks = MusicRepository.getTopTracks()
+//
+//                if (topTracks.isNotEmpty()) {
+//                    val randomTrack = topTracks.random()
+//                    // Maybe you can trigger navigation or update a special "highlighted" track in UI?
+//                    _feedState.value = FeedState.Success(
+//                        listOf(FeedItem.SectionHeader("Random Top Track")) +
+//                                listOf(FeedItem.TrackItem(randomTrack))
+//                    )
+//                }
+//            } catch (e: Exception) {
+//                _feedState.value = FeedState.Error("Failed to load top tracks: ${e.localizedMessage}")
+//            }
+//        }
+//    }
     sealed class FeedState {
         object Loading : FeedState()
         data class Success(val items: List<FeedItem>) : FeedState()

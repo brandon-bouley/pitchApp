@@ -1,5 +1,6 @@
 package com.example.pitchapp
 
+import android.util.Log
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +33,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.pitchapp.data.local.PitchDatabase
 import com.example.pitchapp.data.model.Album
+import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.remote.LastFmApi
 import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ReviewRepository
@@ -49,7 +52,9 @@ import com.example.pitchapp.ui.navigation.LogoHeader
 import com.example.pitchapp.ui.theme.PitchAppTheme
 import com.example.pitchapp.ui.screens.profile.LoginScreen
 import com.example.pitchapp.ui.screens.profile.SignUpScreen
+import com.example.pitchapp.ui.screens.review.AddTrackReviewScreen
 import com.example.pitchapp.viewmodel.AuthViewModel
+import com.example.pitchapp.viewmodel.TrackReviewViewModel
 
 
 
@@ -62,10 +67,30 @@ fun MainApp(
     authViewModel: AuthViewModel,
     musicRepository: MusicRepository,
     reviewRepository: ReviewRepository
+    profileViewModelFactory: ProfileViewModelFactory,
+    trackReviewViewModelFactory: RandomTrackViewModelFactory,
+    selectedTrack: RandomTrack?,
+    shouldReviewTrack: Boolean,
+    onReviewComplete: ()->Unit
+
 ) {
+
+    Log.d("Selected Track","$selectedTrack")
     val navController = rememberNavController()
     val systemDarkTheme = isSystemInDarkTheme()
+    val trackReviewViewModel: TrackReviewViewModel = viewModel(factory = trackReviewViewModelFactory)
+
+
     var darkTheme by remember { mutableStateOf(systemDarkTheme) }
+    val authViewModel = viewModel<AuthViewModel>()
+    LaunchedEffect(shouldReviewTrack, selectedTrack) {
+        if (shouldReviewTrack && selectedTrack != null) {
+            trackReviewViewModel.setSelectedTrack(selectedTrack)
+            navController.navigate("add_track_review")
+            onReviewComplete()
+        }
+    }
+
 
     PitchAppTheme(darkTheme = darkTheme) {
         Scaffold(bottomBar = { BottomNavBar(navController) }) { padding ->
@@ -98,8 +123,7 @@ fun MainApp(
 
                         SearchScreen(
                             navController = navController,
-                            viewModel = searchVm,
-                            reviewViewModel = reviewVm
+                            viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
                         )
                     }
 
@@ -107,7 +131,7 @@ fun MainApp(
                     composable(Screen.Results.route) {
                         ResultScreen(
                             navController = navController,
-                            viewModel = viewModel(factory = searchViewModelFactory)
+                            viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
                         )
                     }
 
@@ -117,6 +141,7 @@ fun MainApp(
                             authViewModel = authViewModel
                         )
                     }
+
 
                     composable("signup") {
                         SignUpScreen(
@@ -133,7 +158,15 @@ fun MainApp(
                             }
                         )
                     ) { backStackEntry ->
-                        val albumId = backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
+                        val albumId =
+                            backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
+                        val viewModel: AlbumDetailViewModel = viewModel(
+                            factory = AlbumDetailViewModelFactory(
+                                musicRepository = MusicRepository(LastFmApi.service),
+                                reviewRepository = ReviewRepository()
+                            )
+                        )
+
                         if (albumId == null) {
                             Text("Error: Missing album ID")
                             return@composable
@@ -158,6 +191,7 @@ fun MainApp(
                         )
                     }
 
+
                     composable(
                         route = Screen.AddReview.route,
                         arguments = listOf(
@@ -178,7 +212,18 @@ fun MainApp(
                             musicRepository = musicRepository,
                             albumId = albumId
                         )
+
+
+                        )
                     }
+
+                    composable("add_track_review") {
+                         AddTrackReviewScreen(
+                             navController = navController,
+                             trackReviewViewModel = trackReviewViewModel
+                         )
+                    }
+
 
                     composable(
                         route = Screen.Profile.route,
@@ -205,6 +250,7 @@ fun MainApp(
                             authViewModel = authViewModel
                         )
                     }
+
                 }
             }
         }

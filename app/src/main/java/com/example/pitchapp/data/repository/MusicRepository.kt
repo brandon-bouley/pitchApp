@@ -6,6 +6,7 @@ import com.example.pitchapp.data.model.ApiAlbum
 import com.example.pitchapp.data.model.ApiAlbumSimple
 import com.example.pitchapp.data.model.ApiArtist
 import com.example.pitchapp.data.model.Artist
+import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.remote.LastFmService
 import com.example.pitchapp.data.model.toDomainAlbum
 import com.example.pitchapp.data.model.toDomainArtist
@@ -33,8 +34,22 @@ class MusicRepository @Inject constructor(
         }
     }
 
+    private val db = Firebase.firestore("newPitchDB")
     private val db = Firebase.firestore
     private val albumsRef = db.collection("albums")
+
+   suspend fun getTopTracks(limit: Int = 11): List<RandomTrack> {
+        return try {
+            val response = lastFmService.getTopTracks(
+                method="chart.gettoptracks",
+                limit=limit
+            )
+            response.tracks.track // assuming TopTracksResponse has a 'tracks' field containing a list of tracks
+        } catch (e: Exception) {
+            Log.e("MusicRepository", "Fetching top tracks failed", e)
+            emptyList()
+        }
+    }
 
 
     suspend fun getAlbumFromFirestore(albumId: String): Result<Album> {

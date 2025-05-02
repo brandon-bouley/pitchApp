@@ -6,7 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
@@ -16,22 +19,31 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.remote.LastFmApi
 import com.example.pitchapp.data.repository.FeedRepository
 import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ProfileRepository
 import com.example.pitchapp.data.repository.ReviewRepository
+import com.example.pitchapp.data.repository.TrackReviewRepository
+
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
 import com.example.pitchapp.viewmodel.AuthViewModel
 import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ProfileViewModel
 import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
+import com.example.pitchapp.viewmodel.TrackReviewViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import com.google.firebase.initialize
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.selects.select
+import kotlin.random.Random
 
 
 class ProfileViewModelFactory(
@@ -44,6 +56,20 @@ class ProfileViewModelFactory(
     ): T {
         return ProfileViewModel(
             repository = profileRepository,
+        ) as T
+    }
+}
+
+class RandomTrackViewModelFactory(
+    private val repository: TrackReviewRepository
+):  ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+        extras: CreationExtras
+    ): T {
+        return TrackReviewViewModel(
+            repository = repository,
         ) as T
     }
 }
@@ -109,7 +135,16 @@ class AlbumDetailViewModelFactory(
 }
 
 
+
+
 class MainActivity : ComponentActivity() {
+    private lateinit var sensorManager: SensorManager
+    private lateinit var shakeDetector: ShakeDetector
+    private lateinit var musicRepository: MusicRepository
+    val trackReviewRepository = TrackReviewRepository()
+    val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository)
+    private lateinit var onShake: () -> Unit
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Dependency setup
@@ -123,13 +158,92 @@ class MainActivity : ComponentActivity() {
             musicRepository = musicRepository,
         )
         val profileRepository = ProfileRepository()
+        val trackReviewRepository = TrackReviewRepository()
+        val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository)
+
         // ViewModel factories
 
         val feedViewModelFactory = FeedViewModelFactory(feedRepository)
         val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
         val profileViewModelFactory = ProfileViewModelFactory(profileRepository)
 
+        onShake = {}
+        shakeDetector = ShakeDetector { onShake() }
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+
         setContent {
+            var showDialog by remember { mutableStateOf(false) }
+            var selectedTrack by remember { mutableStateOf<RandomTrack?>(null) }
+            var shouldReviewTrack by remember { mutableStateOf(false) }
+
+
+            onShake = {
+                CoroutineScope(Dispatchers.Main).launch {
+                    val tracks = musicRepository.getTopTracks()
+                    if (tracks.isNotEmpty()) {
+                        val randomTrack = tracks[Random.nextInt(tracks.size)]
+                       selectedTrack = randomTrack
+                        showDialog = true
+                    }
+                }
+
+            }
+            if (showDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDialog = false },
+                    title = { Text("Random Track 🎵") },
+                    text = {
+                        Column {
+                            Text(
+                                text = "🎵 ${selectedTrack?.name}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            Text(
+                                text = "👤 Artist: ${selectedTrack?.artist?.name}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "🔊 Playcount: ${selectedTrack?.playcount}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Text(
+                                text = "📥 Listeners: ${selectedTrack?.listeners}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                text = "🌐 Tap to open track URL",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.Blue
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Row {
+                            TextButton(onClick = {showDialog = false }) {
+                                Text("Close")
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            TextButton(onClick = {
+                                shouldReviewTrack = true
+                                showDialog = false
+
+                            }) {
+                                Text("Review this song")
+                            }
+                        }
+                    }
+                )
+            }
+
             PitchAppTheme {
                 FirebaseAuthHandler(
                     musicRepository = musicRepository,
@@ -150,6 +264,12 @@ private fun FirebaseAuthHandler(
     feedViewModelFactory: FeedViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
+    trackReviewViewModelFactory: RandomTrackViewModelFactory,
+    selectedTrack: RandomTrack?,
+    shouldReviewTrack: Boolean,
+    onReviewComplete: () -> Unit
+
+
 ) {
     val authViewModel: AuthViewModel = viewModel()
 
@@ -163,6 +283,13 @@ private fun FirebaseAuthHandler(
         searchViewModelFactory = searchViewModelFactory,
         profileViewModelFactory = profileViewModelFactory,
         reviewViewModelFactory = reviewViewModelFactory,
+        searchViewModelFactory = searchViewModelFactory,
+        profileViewModelFactory = profileViewModelFactory,
+        trackReviewViewModelFactory = trackReviewViewModelFactory,
+        selectedTrack = selectedTrack,
+        shouldReviewTrack = shouldReviewTrack,
+        onReviewComplete = onReviewComplete
+
         authViewModel = authViewModel,
         musicRepository = musicRepository,
         reviewRepository = reviewRepository

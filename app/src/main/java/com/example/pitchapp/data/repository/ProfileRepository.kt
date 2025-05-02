@@ -14,6 +14,7 @@ import kotlinx.coroutines.tasks.await
 class ProfileRepository {
     private val db: FirebaseFirestore = Firebase.firestore
 
+
     suspend fun getProfile(userId: String): Profile {
         val profileDoc = db.collection("profiles").document(userId).get().await()
         return profileDoc.toObject(Profile::class.java)?.apply {
