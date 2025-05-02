@@ -69,7 +69,11 @@ fun ProfileScreen(
         when (val state = profileState) {
             is ProfileViewModel.ProfileState.Loading -> {
             SpinningRecord()
-        }
+            }
+            is ProfileViewModel.ProfileState.Error -> {
+                Text("Error: ${state.message}")
+            }
+
             is ProfileViewModel.ProfileState.Success -> {
             val profile = state.profile
             val isOwnProfile = profileUserId == userId
@@ -146,7 +150,9 @@ fun ProfileScreen(
                                     newTheme = editedTheme
                                 )
                                 isEditing = false
-                                viewModel.refreshProfile(userId)
+                                userId?.let { actualUserId ->
+                                    viewModel.refreshProfile(actualUserId)
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth()

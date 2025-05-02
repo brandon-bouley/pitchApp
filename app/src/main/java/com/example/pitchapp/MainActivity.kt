@@ -150,16 +150,24 @@ private fun FirebaseAuthHandler(
     feedViewModelFactory: FeedViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
-
 ) {
+    val authViewModel: AuthViewModel = viewModel()
 
+    val reviewViewModelFactory = ReviewViewModelFactory(
+        reviewRepository = reviewRepository,
+        authViewModel = authViewModel
+    )
 
     MainApp(
         feedViewModelFactory = feedViewModelFactory,
         searchViewModelFactory = searchViewModelFactory,
-        profileViewModelFactory = profileViewModelFactory
+        profileViewModelFactory = profileViewModelFactory,
+        reviewViewModelFactory = reviewViewModelFactory,
+        authViewModel = authViewModel,
+        musicRepository = musicRepository,
+        reviewRepository = reviewRepository
     )
-    }
+}
 
 
 @Composable

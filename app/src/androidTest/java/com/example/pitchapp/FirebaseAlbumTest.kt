@@ -12,8 +12,11 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+//import kotlin.test.assertEquals
+//import kotlin.test.assertTrue
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
+
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 
 @RunWith(AndroidJUnit4::class)
@@ -69,7 +72,7 @@ class FirebaseAlbumTest {
 
         // Verify
         val snapshot = documentRef.get().await()
-        assertTrue(snapshot.exists(), "Album should exist in Firestore")
+        assertTrue("Album should exist in Firestore", snapshot.exists())
         assertEquals("Test Album", snapshot.getString("title"), "Title should match")
         assertEquals("Test Artist", snapshot.getString("artist"), "Artist should match")
     }

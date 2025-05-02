@@ -10,6 +10,7 @@ import com.example.pitchapp.data.model.Result
 import com.example.pitchapp.data.model.Review
 import com.example.pitchapp.data.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -21,7 +22,13 @@ import kotlinx.coroutines.tasks.await
 class ProfileViewModel(
     private val repository: ProfileRepository
 
+
 ) : ViewModel() {
+    sealed class ProfileState {
+        data object Loading : ProfileState()
+        data class Success(val profile: Profile) : ProfileState()
+        data class Error(val message: String) : ProfileState()
+    }
 
     private val _profileState = MutableStateFlow<ProfileState>(ProfileState.Loading)
     val profileState: StateFlow<ProfileState> = _profileState
@@ -67,6 +74,7 @@ class ProfileViewModel(
         } catch (e: Exception) {
             // Handle error if needed
         }
+    }
 
         fun followUser(
             currentUserId: String,
@@ -74,6 +82,7 @@ class ProfileViewModel(
             onSuccess: () -> Unit,
             onFailure: (String) -> Unit
         ) {
+            val db = FirebaseFirestore.getInstance()
             val currentUserRef = db.collection("users").document(currentUserId)
             val targetUserRef = db.collection("users").document(targetUserId)
 
@@ -93,6 +102,7 @@ class ProfileViewModel(
             onSuccess: () -> Unit,
             onFailure: (String) -> Unit
         ) {
+            val db = FirebaseFirestore.getInstance()
             val currentUserRef = db.collection("users").document(currentUserId)
             val targetUserRef = db.collection("users").document(targetUserId)
 
@@ -105,13 +115,7 @@ class ProfileViewModel(
                 onFailure(e.message ?: "Unfollow failed")
             }
         }
-    }
 }
 
 
-    sealed class ProfileState {
-        data object Loading : ProfileState()
-        data class Success(val profile: Profile) : ProfileState()
-        data class Error(val message: String) : ProfileState()
-    }
-}
+

@@ -52,26 +52,29 @@ import com.example.pitchapp.ui.screens.profile.SignUpScreen
 import com.example.pitchapp.viewmodel.AuthViewModel
 
 
+
 @Composable
 fun MainApp(
     feedViewModelFactory: FeedViewModelFactory,
     reviewViewModelFactory: ReviewViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
-    profileViewModelFactory: ProfileViewModelFactory
+    profileViewModelFactory: ProfileViewModelFactory,
+    authViewModel: AuthViewModel,
+    musicRepository: MusicRepository,
+    reviewRepository: ReviewRepository
 ) {
     val navController = rememberNavController()
     val systemDarkTheme = isSystemInDarkTheme()
     var darkTheme by remember { mutableStateOf(systemDarkTheme) }
-    val authViewModel = viewModel<AuthViewModel>()
-
 
     PitchAppTheme(darkTheme = darkTheme) {
         Scaffold(bottomBar = { BottomNavBar(navController) }) { padding ->
 
             Column {
-                LogoHeader(darkTheme = darkTheme,
-                    onToggle = { darkTheme = it })
-
+                LogoHeader(
+                    darkTheme = darkTheme,
+                    onToggle = { darkTheme = it }
+                )
 
                 NavHost(
                     navController = navController,
@@ -79,23 +82,35 @@ fun MainApp(
                     modifier = Modifier.padding(padding)
                 ) {
                     composable(Screen.Feed.route) {
+                        val feedVm = viewModel<FeedViewModel>(factory = feedViewModelFactory)
+                        val reviewVm = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
+
                         FeedScreen(
                             navController = navController,
-                            viewModel = viewModel<FeedViewModel>(factory = feedViewModelFactory)
+                            viewModel = feedVm,
+                            reviewViewModel = reviewVm
                         )
                     }
+
                     composable(Screen.Search.route) {
+                        val searchVm = viewModel<SearchViewModel>(factory = searchViewModelFactory)
+                        val reviewVm = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
+
                         SearchScreen(
                             navController = navController,
-                            viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
+                            viewModel = searchVm,
+                            reviewViewModel = reviewVm
                         )
                     }
+
+
                     composable(Screen.Results.route) {
                         ResultScreen(
                             navController = navController,
-                            viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
+                            viewModel = viewModel(factory = searchViewModelFactory)
                         )
                     }
+
                     composable("login") {
                         LoginScreen(
                             navController = navController,
@@ -118,37 +133,52 @@ fun MainApp(
                             }
                         )
                     ) { backStackEntry ->
-                        val albumId =
-                            backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
-                        val viewModel: AlbumDetailViewModel = viewModel(
-                            factory = AlbumDetailViewModelFactory(
-                                musicRepository = MusicRepository(LastFmApi.service),
-                                reviewRepository = ReviewRepository()
-                            )
-                        )
-
+                        val albumId = backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
                         if (albumId == null) {
                             Text("Error: Missing album ID")
                             return@composable
                         }
+
+                        val albumDetailViewModel = viewModel<AlbumDetailViewModel>(
+                            factory = AlbumDetailViewModelFactory(
+                                musicRepository = musicRepository,
+                                reviewRepository = reviewRepository
+                            )
+                        )
+
+                        val reviewViewModel = viewModel<ReviewViewModel>(
+                            factory = reviewViewModelFactory
+                        )
+
                         AlbumDetailScreen(
                             albumId = albumId,
-                            viewModel = viewModel,
+                            viewModel = albumDetailViewModel,
+                            reviewViewModel = reviewViewModel,
                             navController = navController
                         )
                     }
 
-                    composable(Screen.AddReview.route) {
+                    composable(
+                        route = Screen.AddReview.route,
+                        arguments = listOf(
+                            navArgument(Screen.AddReview.ARG_ALBUM_ID) { type = NavType.StringType }
+                        )
+                    ) { backStackEntry ->
+                        val albumId = backStackEntry.arguments?.getString(Screen.AddReview.ARG_ALBUM_ID)
+                            ?: return@composable
+
                         val reviewVm = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
                         val searchVm = viewModel<SearchViewModel>(factory = searchViewModelFactory)
+
                         AddReviewScreen(
                             navController = navController,
                             reviewViewModel = reviewVm,
                             searchViewModel = searchVm,
-
-                            )
+                            authViewModel = authViewModel,
+                            musicRepository = musicRepository,
+                            albumId = albumId
+                        )
                     }
-
 
                     composable(
                         route = Screen.Profile.route,
@@ -171,11 +201,10 @@ fun MainApp(
                         ProfileScreen(
                             navController = navController,
                             viewModel = profileVm,
-                            userId = userId,
+                            profileUserId = userId,
                             authViewModel = authViewModel
                         )
                     }
-
                 }
             }
         }
