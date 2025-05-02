@@ -62,7 +62,7 @@ fun AlbumDetailScreen(
         if (album == null || album.id != albumId) {
             viewModel.loadAlbumDetails(albumId)
         }
-        reviewViewModel.loadReviews(albumId) // Load reviews when screen opens
+        reviewViewModel.loadReviews(albumId)
     }
 
     Scaffold(

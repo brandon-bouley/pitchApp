@@ -5,6 +5,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Artist
 import com.example.pitchapp.data.model.Review
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.example.pitchapp.data.model.Result
+import com.example.pitchapp.ui.navigation.Screen
 
 class SearchViewModel(
     private val musicRepository: MusicRepository,
@@ -110,6 +112,27 @@ class SearchViewModel(
             )
         }
         getArtistTopAlbums(artist.name)
+    }
+
+    fun onAlbumClicked(
+        navController: NavController,
+        album: Album
+    ) {
+        viewModelScope.launch {
+            when (val result = musicRepository.getOrFetchAlbum(album.artist, album.title)) {
+                is Result.Success -> {
+                    navController.navigate(Screen.AlbumDetail.createRoute(result.data.id))
+                }
+                is Result.Error -> {
+                    _searchState.update { it.copy(error = result.exception.message) }
+                }
+                else -> {
+                    _searchState.update {
+                        it.copy(error = "Unexpected result when caching album")
+                    }
+                }
+            }
+        }
     }
 
     fun selectAlbum(album: Album) {
@@ -230,3 +253,4 @@ class SearchViewModel(
         _isAlbumSelected.value = false
     }
 }
+

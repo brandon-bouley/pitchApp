@@ -35,7 +35,7 @@ class AlbumDetailViewModel(
 
     init {
         if (albumId == null) {
-            _error.value = "Invalid album ID"
+            _error.value = "On init: Invalid album ID"
         } else {
             loadAlbumDetails(albumId)
         }

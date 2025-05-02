@@ -55,6 +55,7 @@ import coil.request.ImageRequest
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.LaunchedEffect
 import com.example.pitchapp.viewmodel.ReviewViewModel
+import androidx.lifecycle.viewModelScope
 
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
@@ -82,8 +83,7 @@ private fun CompactSearchLayout(navController: NavController, viewModel: SearchV
         SearchContent(
             viewModel = viewModel,
             onAlbumSelected = { album ->
-                viewModel.selectAlbum(album)
-                navController.navigate(Screen.AlbumDetail.createRoute(album.id))
+                viewModel.onAlbumClicked(navController, album)
             }
         )
     }
@@ -293,3 +293,7 @@ fun NetworkImage(
         contentScale = contentScale
     )
 }
+
+
+
+
