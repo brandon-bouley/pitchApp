@@ -1,5 +1,6 @@
 package com.example.pitchapp.ui.screens.review
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,26 +28,29 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.ui.components.AlbumSearchField
 import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
-
+//set selected track to null somewhere
 @Composable
 fun AddReviewScreen(
     navController: NavController,
     reviewViewModel: ReviewViewModel,
-    searchViewModel: SearchViewModel
+    searchViewModel: SearchViewModel,
+
 ) {
 
-    val uiState     by reviewViewModel.uiState.collectAsState()
 
+    val uiState     by reviewViewModel.uiState.collectAsState()
     val loadedAlbum by searchViewModel.selectedAlbum.collectAsState()
 
     LaunchedEffect(loadedAlbum) {
         loadedAlbum?.let { reviewViewModel.setSelectedAlbum(it) }
     }
+
 
     Scaffold { padding ->
         Column(
@@ -54,22 +58,23 @@ fun AddReviewScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Selected Album:", style = MaterialTheme.typography.titleMedium)
-            uiState.selectedAlbum?.let { album ->
-                Text(
-                    text = "${album.title} by ${album.artist}",
-                    style = MaterialTheme.typography.bodyMedium
+                Text("Selected Album:", style = MaterialTheme.typography.titleMedium)
+                uiState.selectedAlbum?.let { album ->
+                    Text(
+                        text = "${album.title} by ${album.artist}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } ?: Text("No album selected", style = MaterialTheme.typography.bodyMedium)
+
+                Spacer(Modifier.height(8.dp))
+
+
+                AlbumSearchField(
+                    viewModel = searchViewModel,
+                    onAlbumSelected = { searchViewModel.selectAlbum(it) },
+                    modifier = Modifier.fillMaxWidth()
                 )
-            } ?: Text("No album selected", style = MaterialTheme.typography.bodyMedium)
 
-            Spacer(Modifier.height(8.dp))
-
-
-            AlbumSearchField(
-                viewModel       = searchViewModel,
-                onAlbumSelected = { searchViewModel.selectAlbum(it) },
-                modifier        = Modifier.fillMaxWidth()
-            )
 
             Spacer(Modifier.height(16.dp))
             Text("Rating:", style = MaterialTheme.typography.titleMedium)

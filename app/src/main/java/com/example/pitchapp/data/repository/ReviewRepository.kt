@@ -11,7 +11,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 
 class ReviewRepository {
-    private val db = Firebase.firestore("pitchdb")
+    private val db = Firebase.firestore("newPitchDB")
     private val reviewsRef = db.collection("reviews")
     private val albumsRef = db.collection("albums")
 

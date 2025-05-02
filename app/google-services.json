@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "896403685263",
-    "project_id": "bbouleycs501",
-    "storage_bucket": "bbouleycs501.firebasestorage.app"
+    "project_number": "12057886075",
+    "project_id": "newpitchdb",
+    "storage_bucket": "newpitchdb.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:896403685263:android:9a9065e8198352c1b7d5fa",
+        "mobilesdk_app_id": "1:12057886075:android:b6040fc6fe4722fc0291de",
         "android_client_info": {
           "package_name": "com.example.pitchapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "12057886075-rlv60lntmqolhlc4avl8gmcs39rem5ac.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.pitchapp",
+            "certificate_hash": "d1ae941f1be2e847d732c7a62654a278128ca0c9"
+          }
+        },
+        {
+          "client_id": "12057886075-irgm13b85smrsq29euri0sbnfuec3215.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyC1OmVdmmO4TfZv-vRSepdZPmOwyp7IzrI"
+          "current_key": "AIzaSyDgvFcdn3sl2zzK9MZwXS5xDIZSwp7v6ns"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "12057886075-irgm13b85smrsq29euri0sbnfuec3215.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

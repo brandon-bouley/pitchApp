@@ -12,7 +12,7 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
 class ProfileRepository {
-    private val db: FirebaseFirestore = Firebase.firestore("pitchdb")
+    private val db: FirebaseFirestore = Firebase.firestore("newPitchDB")
 
     suspend fun getProfile(userId: String): Profile {
         val profileDoc = db.collection("profiles").document(userId).get().await()

@@ -1,5 +1,6 @@
 package com.example.pitchapp
 
+import android.util.Log
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +33,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.pitchapp.data.local.PitchDatabase
 import com.example.pitchapp.data.model.Album
+import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.remote.LastFmApi
 import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ReviewRepository
@@ -49,7 +52,9 @@ import com.example.pitchapp.ui.navigation.LogoHeader
 import com.example.pitchapp.ui.theme.PitchAppTheme
 import com.example.pitchapp.ui.screens.profile.LoginScreen
 import com.example.pitchapp.ui.screens.profile.SignUpScreen
+import com.example.pitchapp.ui.screens.review.AddTrackReviewScreen
 import com.example.pitchapp.viewmodel.AuthViewModel
+import com.example.pitchapp.viewmodel.TrackReviewViewModel
 
 
 @Composable
@@ -57,12 +62,29 @@ fun MainApp(
     feedViewModelFactory: FeedViewModelFactory,
     reviewViewModelFactory: ReviewViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
-    profileViewModelFactory: ProfileViewModelFactory
+    profileViewModelFactory: ProfileViewModelFactory,
+    trackReviewViewModelFactory: RandomTrackViewModelFactory,
+    selectedTrack: RandomTrack?,
+    shouldReviewTrack: Boolean,
+    onReviewComplete: ()->Unit
+
 ) {
+
+    Log.d("Selected Track","$selectedTrack")
     val navController = rememberNavController()
     val systemDarkTheme = isSystemInDarkTheme()
+    val trackReviewViewModel: TrackReviewViewModel = viewModel(factory = trackReviewViewModelFactory)
+
+
     var darkTheme by remember { mutableStateOf(systemDarkTheme) }
     val authViewModel = viewModel<AuthViewModel>()
+    LaunchedEffect(shouldReviewTrack, selectedTrack) {
+        if (shouldReviewTrack && selectedTrack != null) {
+            trackReviewViewModel.setSelectedTrack(selectedTrack)
+            navController.navigate("add_track_review")
+            onReviewComplete()
+        }
+    }
 
 
     PitchAppTheme(darkTheme = darkTheme) {
@@ -96,12 +118,14 @@ fun MainApp(
                             viewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
                         )
                     }
+
                     composable("login") {
                         LoginScreen(
                             navController = navController,
                             authViewModel = authViewModel
                         )
                     }
+
 
                     composable("signup") {
                         SignUpScreen(
@@ -137,8 +161,8 @@ fun MainApp(
                             navController = navController
                         )
                     }
-
                     composable(Screen.AddReview.route) {
+
                         val reviewVm = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
                         val searchVm = viewModel<SearchViewModel>(factory = searchViewModelFactory)
                         AddReviewScreen(
@@ -146,7 +170,15 @@ fun MainApp(
                             reviewViewModel = reviewVm,
                             searchViewModel = searchVm,
 
-                            )
+
+                        )
+                    }
+
+                    composable("add_track_review") {
+                         AddTrackReviewScreen(
+                             navController = navController,
+                             trackReviewViewModel = trackReviewViewModel
+                         )
                     }
 
 
