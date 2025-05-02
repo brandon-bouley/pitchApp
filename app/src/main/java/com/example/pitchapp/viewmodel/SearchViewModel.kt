@@ -103,6 +103,12 @@ class SearchViewModel(
 
     fun selectArtist(artist: Artist) {
         _selectedArtist.value = artist
+        _searchState.update {
+            it.copy(
+                searchQuery = "",  // Clear search query
+                results = emptyList()  // Clear previous results
+            )
+        }
         getArtistTopAlbums(artist.name)
     }
 
@@ -182,6 +188,7 @@ class SearchViewModel(
                     _artistAlbums.value = result.data
                     _searchState.update {
                         it.copy(
+                            results = result.data,
                             isLoading = false,
                             searchType = SearchType.ALBUM
                         )

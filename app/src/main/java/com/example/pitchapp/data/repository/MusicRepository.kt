@@ -38,11 +38,12 @@ class MusicRepository @Inject constructor(
 
 
     suspend fun getAlbumFromFirestore(albumId: String): Result<Album> {
-        if (albumId.isBlank()) {
-            return Result.Error(Exception("Invalid album ID"))
-        }
         return try {
-            val snapshot = albumsRef.document(albumId).get().await()
+            val snapshot = db.collection("albums")
+                .document(albumId)
+                .get()
+                .await()
+
             if (snapshot.exists()) {
                 Result.Success(snapshot.toObject(Album::class.java)!!)
             } else {
@@ -53,16 +54,13 @@ class MusicRepository @Inject constructor(
         }
     }
 
-    suspend fun saveAlbumToFirestore(album: Album): Result<Unit> {
+    // MusicRepository.kt
+    private suspend fun saveAlbumToFirestore(album: Album): Result<Unit> {
         return try {
-            // Generate ID if missing
-            val finalAlbum = if (album.id.isEmpty()) {
-                album.copy(id = generateAlbumId(album.artist, album.title))
-            } else {
-                album
-            }
-
-            albumsRef.document(finalAlbum.id).set(finalAlbum).await()
+            db.collection("albums")
+                .document(album.id)
+                .set(album)
+                .await()
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e)
@@ -169,19 +167,29 @@ class MusicRepository @Inject constructor(
         return when (val existing = getAlbumFromFirestore(albumId)) {
             is Result.Success -> existing
             else -> {
-                // Fetch full details from API
-                when (val apiResult = getAlbumInfo(artist = artist, album = title)) {
+                when (val apiResult = getAlbumInfo(artist, title)) {
                     is Result.Success -> {
-                        val album = apiResult.data.copy(id = albumId)
-                        saveAlbumToFirestore(album)
-                        Result.Success(album)
+                        val rawAlbum = apiResult.data
+                        if (rawAlbum.title.isBlank() || rawAlbum.artist.isBlank()) {
+                            return Result.Error(Exception("Invalid API album data"))
+                        }
+
+                        val album = rawAlbum.copy(id = albumId)
+
+                        // 3. Handle save result properly
+                        when (val saveResult = saveAlbumToFirestore(album)) {
+                            is Result.Success -> Result.Success(album)
+                            is Result.Error -> Result.Error(
+                                Exception("API data loaded but Firestore save failed: ${saveResult.exception}")
+                            )
+                        }
                     }
                     is Result.Error -> apiResult
-                    else -> Result.Error(Exception("Unexpected result"))
                 }
             }
         }
     }
+
 
 
 }

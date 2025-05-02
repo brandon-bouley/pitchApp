@@ -119,12 +119,20 @@ private fun SearchContent(
     }
 ) {
     val searchState by viewModel.searchState.collectAsState()
+    val selectedArtist by viewModel.selectedArtist.collectAsState()
+
+    LaunchedEffect(selectedArtist) {
+        selectedArtist?.let { artist ->
+            viewModel.getArtistTopAlbums(artist.name)
+        }
+    }
 
     Column(Modifier.fillMaxSize()) {
         SearchField(
             query = searchState.searchQuery,
             onQueryChange = viewModel::updateSearchQuery,
-            searchType = searchState.searchType
+            searchType = searchState.searchType,
+            viewModel = viewModel
         )
 
         Spacer(Modifier.height(8.dp))
@@ -204,12 +212,19 @@ private fun DetailPane(
 fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
-    searchType: SearchViewModel.SearchType
+    searchType: SearchViewModel.SearchType,
+    viewModel: SearchViewModel
 ) {
     Column(Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = query,
-            onValueChange = onQueryChange,
+            onValueChange = {
+                if (searchType == SearchViewModel.SearchType.ALBUM) {
+                    onQueryChange("")
+                    viewModel.setSearchType(SearchViewModel.SearchType.ARTIST)
+                }
+                onQueryChange(it)
+            },
             label = { Text(when (searchType) {
                 SearchViewModel.SearchType.ARTIST -> "Search artists"
                 SearchViewModel.SearchType.ALBUM -> "Search albums"

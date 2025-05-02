@@ -19,7 +19,6 @@ class AlbumDetailViewModel(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // Get album ID from navigation arguments
     private val albumId: String? = savedStateHandle.get<String>("albumId")
 
     private val _albumDetails = mutableStateOf<Album?>(null)
