@@ -20,6 +20,8 @@ fun SignUpScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -64,6 +66,7 @@ fun SignUpScreen(
                     coroutineScope.launch {
                         authViewModel.createAccount(username, password,
                             onSuccess = {
+                                isLoading = false
                                 println("Signup successful! Navigating to Feed")
                                 navController.navigate(Screen.Feed.route) {
                                     popUpTo(0) { inclusive = true }
@@ -72,17 +75,26 @@ fun SignUpScreen(
                             },
                             onFailure = { error ->
                                 println("Signup failed: $error")
+                                isLoading = false
                                 errorMessage = error
                             }
                         )
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading
         ) {
-            Text("Create Account")
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Create Account")
+            }
         }
-
         if (errorMessage != null) {
             Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
         }

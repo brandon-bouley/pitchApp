@@ -71,6 +71,7 @@ class AuthViewModel : ViewModel() {
             _userId.value = newUserId
             onSuccess()
         } catch (e: Exception) {
+            println("Signup failed inside ViewModel: ${e.message}")
             onFailure(e.message ?: "Signup failed")
         }
     }
