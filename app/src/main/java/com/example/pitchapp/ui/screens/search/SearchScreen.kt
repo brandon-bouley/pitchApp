@@ -55,6 +55,7 @@ import coil.request.ImageRequest
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.LaunchedEffect
 import com.example.pitchapp.viewmodel.ReviewViewModel
+import androidx.lifecycle.viewModelScope
 
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
@@ -82,8 +83,7 @@ private fun CompactSearchLayout(navController: NavController, viewModel: SearchV
         SearchContent(
             viewModel = viewModel,
             onAlbumSelected = { album ->
-                viewModel.selectAlbum(album)
-                navController.navigate(Screen.AlbumDetail.createRoute(album.id))
+                viewModel.onAlbumClicked(navController, album)
             }
         )
     }
@@ -119,12 +119,20 @@ private fun SearchContent(
     }
 ) {
     val searchState by viewModel.searchState.collectAsState()
+    val selectedArtist by viewModel.selectedArtist.collectAsState()
+
+    LaunchedEffect(selectedArtist) {
+        selectedArtist?.let { artist ->
+            viewModel.getArtistTopAlbums(artist.name)
+        }
+    }
 
     Column(Modifier.fillMaxSize()) {
         SearchField(
             query = searchState.searchQuery,
             onQueryChange = viewModel::updateSearchQuery,
-            searchType = searchState.searchType
+            searchType = searchState.searchType,
+            viewModel = viewModel
         )
 
         Spacer(Modifier.height(8.dp))
@@ -204,12 +212,19 @@ private fun DetailPane(
 fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
-    searchType: SearchViewModel.SearchType
+    searchType: SearchViewModel.SearchType,
+    viewModel: SearchViewModel
 ) {
     Column(Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = query,
-            onValueChange = onQueryChange,
+            onValueChange = {
+                if (searchType == SearchViewModel.SearchType.ALBUM) {
+                    onQueryChange("")
+                    viewModel.setSearchType(SearchViewModel.SearchType.ARTIST)
+                }
+                onQueryChange(it)
+            },
             label = { Text(when (searchType) {
                 SearchViewModel.SearchType.ARTIST -> "Search artists"
                 SearchViewModel.SearchType.ALBUM -> "Search albums"
@@ -278,3 +293,7 @@ fun NetworkImage(
         contentScale = contentScale
     )
 }
+
+
+
+

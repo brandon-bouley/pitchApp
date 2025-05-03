@@ -51,7 +51,6 @@ fun AddReviewScreen(
 
 ) {
     val uiState by reviewViewModel.uiState.collectAsState()
-    val loadedAlbum by searchViewModel.selectedAlbum.collectAsState()
     val userId by authViewModel.userId.collectAsState()
 
     LaunchedEffect(loadedAlbum) {
@@ -60,17 +59,14 @@ fun AddReviewScreen(
 
 
     LaunchedEffect(albumId) {
-        albumId?.let {
-            // Handle the Result type properly
-            when(val result = musicRepository.getAlbumFromFirestore(it)) {
+        albumId?.let { id ->
+            when(val result = musicRepository.getAlbumFromFirestore(id)) {
                 is Result.Success -> {
-                    result.data.let { album ->
-                        reviewViewModel.setSelectedAlbum(album)
-                    }
+                    reviewViewModel.setSelectedAlbum(result.data)
+                    searchViewModel.selectAlbum(result.data)
                 }
                 is Result.Error -> {
-                    reviewViewModel.updateErrorMessage("Failed to load album: ${result.exception.message}")
-                    loadedAlbum?.let { it1 -> reviewViewModel.setSelectedAlbum(it1) }
+                    reviewViewModel.updateErrorMessage("Album load failed: ${result.exception.message}")
                 }
             }
         }
@@ -82,15 +78,15 @@ fun AddReviewScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-                Text("Selected Album:", style = MaterialTheme.typography.titleMedium)
-                uiState.selectedAlbum?.let { album ->
-                    Text(
-                        text = "${album.title} by ${album.artist}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                } ?: Text("No album selected", style = MaterialTheme.typography.bodyMedium)
 
-                Spacer(Modifier.height(8.dp))
+            uiState.selectedAlbum?.let { album ->
+                Column {
+                    Text("Reviewing:", style = MaterialTheme.typography.titleMedium)
+                    Text(album.title, style = MaterialTheme.typography.bodyLarge)
+                    Text(album.artist, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(16.dp))
+                }
+            }
 
 
                 AlbumSearchField(
@@ -126,9 +122,9 @@ fun AddReviewScreen(
             Button(
                 onClick = {
                     reviewViewModel.submitReview {
-                        val albumId = uiState.selectedAlbum?.id
-                        if (albumId != null) {
-                            navController.navigate(Screen.AlbumDetail.createRoute(albumId))
+                        val currID = uiState.selectedAlbum?.id
+                        if (currID != null) {
+                            navController.navigate(Screen.AlbumDetail.createRoute(currID))
                         }
                     }
                 },
@@ -150,6 +146,7 @@ fun AddReviewScreen(
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
+
         }
     }
 }

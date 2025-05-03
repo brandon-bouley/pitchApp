@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.pitchapp.R
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.ui.components.ThemeToggle
@@ -61,46 +62,34 @@ sealed class Screen(val route: String) {
     )
 
 
-    @Composable
-    fun BottomNavBar(navController: NavController) {
-        NavigationBar {
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
-            val currentRoute = navBackStackEntry?.destination?.route
+@Composable
+fun BottomNavBar(navController: NavController) {
+    NavigationBar {
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentDestination = navBackStackEntry?.destination
 
-            val items = listOf(
-                NavItem(Screen.Feed, Icons.Default.Home, "Home"),
-                NavItem(Screen.Search, Icons.Default.Search, "Search"),
-                NavItem(Screen.AddReview, Icons.Default.Add, "Review"),
-                NavItem(Screen.Profile, Icons.Default.Person, "Profile")
-            )
+        val items = listOf(
+            NavItem(Screen.Feed, Icons.Default.Home, "Home"),
+            NavItem(Screen.Search, Icons.Default.Search, "Search"),
+            NavItem(Screen.Profile, Icons.Default.Person, "Profile")
+        )
 
-            items.forEach { item ->
-                val navigateRoute = when (item.screen) {
-                    Screen.Profile -> Screen.Profile.createRoute("current_user")
-                    else -> item.screen.route
-                }
-
-                val selected = when (item.screen) {
-                    Screen.Profile -> currentRoute?.startsWith("profile") == true
-                    else -> currentRoute == item.screen.route
-                }
-
-                NavigationBarItem(
-                    icon = { Icon(item.icon, contentDescription = item.label) },
-                    label = { Text(item.label) },
-                    selected = selected,
-                    onClick = {
-                        navController.navigate(navigateRoute) {
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
+        items.forEach { item ->
+            NavigationBarItem(
+                icon = { Icon(item.icon, contentDescription = item.label) },
+                label = { Text(item.label) },
+                selected = currentDestination?.route == item.screen.route,
+                onClick = {
+                    navController.navigate(item.screen.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
                         }
+                        launchSingleTop = true
+                        restoreState = true
                     }
-                )
-            }
+                }
+            )
         }
     }
-
+}
 
