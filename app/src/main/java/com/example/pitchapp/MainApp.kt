@@ -52,6 +52,7 @@ import com.example.pitchapp.ui.screens.profile.LoginScreen
 import com.example.pitchapp.ui.screens.profile.SignUpScreen
 import com.example.pitchapp.viewmodel.AuthViewModel
 
+
 @Composable
 fun MainApp(
     feedViewModelFactory: FeedViewModelFactory,
@@ -152,22 +153,33 @@ fun MainApp(
 
 
 
-                composable(
-                    route = Screen.Profile.route,
-                    arguments = listOf(navArgument(Screen.Profile.ARG_USERNAME) {
-                        type = NavType.StringType
-                        nullable = true
-                    })
-                ) { backStackEntry ->
-                    val username = backStackEntry.arguments?.getString(Screen.Profile.ARG_USERNAME)
-                    ProfileScreen(
-                        navController = navController,
-                        viewModel = viewModel(factory = profileViewModelFactory),
-                        userId = username ?: Firebase.auth.currentUser?.uid ?: "",
-                        authViewModel = authViewModel
-                    )
+                    composable(
+                        route = Screen.Profile.route,
+                        arguments = listOf(
+                            navArgument(Screen.Profile.ARG_USERNAME) {
+                                type = NavType.StringType
+                                defaultValue = Firebase.auth.currentUser?.uid ?: ""
+                                nullable = true
+                            }
+                        )
+                    ) { backStack ->
+                        val userId = backStack.arguments?.getString(Screen.Profile.ARG_USERNAME)
+                            ?: Firebase.auth.currentUser?.uid ?: ""
+
+                        val profileVm = viewModel<ProfileViewModel>(
+                            factory = profileViewModelFactory,
+                            key = userId
+                        )
+
+                        ProfileScreen(
+                            navController = navController,
+                            viewModel = profileVm,
+                            userId = userId,
+                            authViewModel = authViewModel
+                        )
+                    }
+
                 }
             }
         }
     }
-}
