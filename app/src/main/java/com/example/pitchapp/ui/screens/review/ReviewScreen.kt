@@ -53,11 +53,6 @@ fun AddReviewScreen(
     val uiState by reviewViewModel.uiState.collectAsState()
     val userId by authViewModel.userId.collectAsState()
 
-    LaunchedEffect(loadedAlbum) {
-        loadedAlbum?.let { reviewViewModel.setSelectedAlbum(it) }
-    }
-
-
     LaunchedEffect(albumId) {
         albumId?.let { id ->
             when(val result = musicRepository.getAlbumFromFirestore(id)) {

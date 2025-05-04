@@ -26,7 +26,7 @@ import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ProfileRepository
 import com.example.pitchapp.data.repository.ReviewRepository
 import com.example.pitchapp.data.repository.TrackReviewRepository
-
+import android.hardware.SensorManager
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
 import com.example.pitchapp.viewmodel.AuthViewModel
 import com.example.pitchapp.viewmodel.FeedViewModel
@@ -44,6 +44,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlin.random.Random
+import com.example.pitchapp.ui.components.ShakeDetector
+
+
 
 
 class ProfileViewModelFactory(
@@ -133,9 +136,6 @@ class AlbumDetailViewModelFactory(
         ) as T
     }
 }
-
-
-
 
 class MainActivity : ComponentActivity() {
     private lateinit var sensorManager: SensorManager
@@ -250,7 +250,11 @@ class MainActivity : ComponentActivity() {
                     reviewRepository = reviewRepository,
                     feedViewModelFactory = feedViewModelFactory,
                     searchViewModelFactory = searchViewModelFactory,
-                    profileViewModelFactory = profileViewModelFactory
+                    profileViewModelFactory = profileViewModelFactory,
+                    trackReviewViewModelFactory = trackViewModelFactory,
+                    selectedTrack = selectedTrack,
+                    shouldReviewTrack = shouldReviewTrack,
+                    onReviewComplete = { shouldReviewTrack = false }
                 )
             }
         }
@@ -283,13 +287,10 @@ private fun FirebaseAuthHandler(
         searchViewModelFactory = searchViewModelFactory,
         profileViewModelFactory = profileViewModelFactory,
         reviewViewModelFactory = reviewViewModelFactory,
-        searchViewModelFactory = searchViewModelFactory,
-        profileViewModelFactory = profileViewModelFactory,
         trackReviewViewModelFactory = trackReviewViewModelFactory,
         selectedTrack = selectedTrack,
         shouldReviewTrack = shouldReviewTrack,
-        onReviewComplete = onReviewComplete
-
+        onReviewComplete = onReviewComplete,
         authViewModel = authViewModel,
         musicRepository = musicRepository,
         reviewRepository = reviewRepository

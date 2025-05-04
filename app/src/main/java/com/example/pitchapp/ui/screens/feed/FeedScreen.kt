@@ -1,6 +1,6 @@
 package com.example.pitchapp.ui.screens.feed
 
-import ShakeDetector
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,6 +29,7 @@ import com.example.pitchapp.ui.components.ReviewCard
 import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ReviewViewModel
+
 
 @Composable
 fun FeedScreen(navController: NavController, viewModel: FeedViewModel = viewModel(), reviewViewModel: ReviewViewModel) {
