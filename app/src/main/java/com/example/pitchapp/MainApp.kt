@@ -1,5 +1,6 @@
 package com.example.pitchapp
 
+import android.util.Log
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +34,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.pitchapp.data.local.PitchDatabase
 import com.example.pitchapp.data.model.Album
+import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.remote.LastFmApi
 import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ReviewRepository
@@ -50,29 +53,48 @@ import com.example.pitchapp.ui.navigation.LogoHeader
 import com.example.pitchapp.ui.theme.PitchAppTheme
 import com.example.pitchapp.ui.screens.profile.LoginScreen
 import com.example.pitchapp.ui.screens.profile.SignUpScreen
+import com.example.pitchapp.ui.screens.review.AddTrackReviewScreen
 import com.example.pitchapp.viewmodel.AuthViewModel
+import com.example.pitchapp.viewmodel.TrackReviewViewModel
+
+
 
 @Composable
 fun MainApp(
     feedViewModelFactory: FeedViewModelFactory,
+    reviewViewModelFactory: ReviewViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
-    profileViewModelFactory: ProfileViewModelFactory
+    profileViewModelFactory: ProfileViewModelFactory,
+    authViewModel: AuthViewModel,
+    musicRepository: MusicRepository,
+    reviewRepository: ReviewRepository,
+    trackReviewViewModelFactory: RandomTrackViewModelFactory,
+    selectedTrack: RandomTrack?,
+    shouldReviewTrack: Boolean,
+    onReviewComplete: () -> Unit
 ) {
     val navController = rememberNavController()
+    val trackReviewViewModel: TrackReviewViewModel = viewModel(factory = trackReviewViewModelFactory)
     val systemDarkTheme = isSystemInDarkTheme()
     var darkTheme by remember { mutableStateOf(systemDarkTheme) }
-    val authViewModel = viewModel<AuthViewModel>()
 
-    val reviewViewModelFactory = ReviewViewModelFactory(
-            reviewRepository = ReviewRepository(),
-            authViewModel = authViewModel
-        )
-
+    LaunchedEffect(shouldReviewTrack, selectedTrack) {
+        if (shouldReviewTrack && selectedTrack != null) {
+            trackReviewViewModel.setSelectedTrack(selectedTrack)
+            navController.navigate("add_track_review")
+            onReviewComplete()
+        }
+    }
 
     PitchAppTheme(darkTheme = darkTheme) {
         Scaffold(
             bottomBar = { BottomNavBar(navController) },
-            topBar = { LogoHeader(darkTheme = darkTheme, onToggle = { darkTheme = it }) }
+            topBar = {
+                LogoHeader(
+                    darkTheme = darkTheme,
+                    onToggle = { darkTheme = it }
+                )
+            }
         ) { padding ->
             NavHost(
                 navController = navController,
@@ -80,6 +102,7 @@ fun MainApp(
                 modifier = Modifier.padding(padding)
             ) {
                 composable(Screen.Feed.route) {
+
                     FeedScreen(
                         navController = navController,
                         viewModel = viewModel(factory = feedViewModelFactory),
@@ -142,30 +165,45 @@ fun MainApp(
                     }
                 }
 
+                composable(
+                    route = Screen.Profile.route,
+                    arguments = listOf(
+                        navArgument(Screen.Profile.ARG_USERNAME) {
+                            type = NavType.StringType
+                            defaultValue = Firebase.auth.currentUser?.uid ?: ""
+                            nullable = true
+                        }
+                    )
+                ) { backStack ->
+                    val userId = backStack.arguments?.getString(Screen.Profile.ARG_USERNAME)
+                        ?: Firebase.auth.currentUser?.uid ?: ""
+
+                    val profileVm = viewModel<ProfileViewModel>(
+                        factory = profileViewModelFactory,
+                        key = userId
+                    )
+
+                    ProfileScreen(
+                        navController = navController,
+                        viewModel = profileVm,
+                        profileUserId = userId,
+                        authViewModel = authViewModel
+                    )
+                }
+
+                composable("add_track_review") {
+                    AddTrackReviewScreen(
+                        navController = navController,
+                        trackReviewViewModel = trackReviewViewModel
+                    )
+                }
+
                 composable("login") {
-                    LoginScreen(navController, authViewModel)
+                    LoginScreen(navController = navController, authViewModel = authViewModel)
                 }
 
                 composable("signup") {
-                    SignUpScreen(navController, authViewModel)
-                }
-
-
-
-                composable(
-                    route = Screen.Profile.route,
-                    arguments = listOf(navArgument(Screen.Profile.ARG_USERNAME) {
-                        type = NavType.StringType
-                        nullable = true
-                    })
-                ) { backStackEntry ->
-                    val username = backStackEntry.arguments?.getString(Screen.Profile.ARG_USERNAME)
-                    ProfileScreen(
-                        navController = navController,
-                        viewModel = viewModel(factory = profileViewModelFactory),
-                        userId = username ?: Firebase.auth.currentUser?.uid ?: "",
-                        authViewModel = authViewModel
-                    )
+                    SignUpScreen(navController = navController, authViewModel = authViewModel)
                 }
             }
         }
