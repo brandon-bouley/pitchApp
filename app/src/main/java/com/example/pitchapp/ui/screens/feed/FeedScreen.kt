@@ -35,7 +35,9 @@ import com.example.pitchapp.viewmodel.ReviewViewModel
 fun FeedScreen(navController: NavController, viewModel: FeedViewModel = viewModel(), reviewViewModel: ReviewViewModel) {
     val feedState by viewModel.feedState.collectAsState()
 
-
+    LaunchedEffect(Unit) {
+        viewModel.loadFeed()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = feedState) {
