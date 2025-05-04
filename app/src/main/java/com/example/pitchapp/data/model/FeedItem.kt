@@ -12,5 +12,6 @@ sealed class FeedItem {
     ) : FeedItem()
 
     data class SectionHeader(val title: String) : FeedItem()
+    data class TrackItem(val track: RandomTrack) : FeedItem()
 }
 

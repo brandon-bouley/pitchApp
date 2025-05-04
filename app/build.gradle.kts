@@ -55,6 +55,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
     implementation("androidx.compose.material3:material3-window-size-class:1.1.1")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlin-coroutines-adapter:0.9.2")
 
     implementation("com.google.firebase:firebase-analytics")
     implementation("androidx.room:room-runtime:2.6.1")
@@ -106,5 +107,8 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.22")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation(kotlin("test"))
 
 }

@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.pitchapp.data.repository.MusicRepository
+import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.ui.components.AlbumSearchField
 import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.ui.screens.search.SpinningRecord
@@ -38,6 +39,7 @@ import com.example.pitchapp.data.model.Result
 import com.example.pitchapp.viewmodel.AuthViewModel
 
 
+//set selected track to null somewhere
 @Composable
 fun AddReviewScreen(
     navController: NavController,
@@ -46,6 +48,7 @@ fun AddReviewScreen(
     authViewModel: AuthViewModel,
     musicRepository: MusicRepository,
     albumId: String?
+
 ) {
     val uiState by reviewViewModel.uiState.collectAsState()
     val userId by authViewModel.userId.collectAsState()
@@ -81,11 +84,12 @@ fun AddReviewScreen(
             }
 
 
-            AlbumSearchField(
-                viewModel       = searchViewModel,
-                onAlbumSelected = { searchViewModel.selectAlbum(it) },
-                modifier        = Modifier.fillMaxWidth()
-            )
+                AlbumSearchField(
+                    viewModel = searchViewModel,
+                    onAlbumSelected = { searchViewModel.selectAlbum(it) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
 
             Spacer(Modifier.height(16.dp))
             Text("Rating:", style = MaterialTheme.typography.titleMedium)
