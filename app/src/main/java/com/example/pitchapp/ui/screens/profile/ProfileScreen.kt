@@ -228,7 +228,7 @@ fun ProfileScreen(
 
                         LazyColumn {
                             items(profile.reviews) { review ->
-                                FeedItem.ReviewItem(review)
+                                FeedItem.ReviewItem(review,review.albumDetails!!)
                             }
                         }
                     }

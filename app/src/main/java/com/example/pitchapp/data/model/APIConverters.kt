@@ -49,7 +49,7 @@ fun ApiAlbum.toDomainAlbum(): Album {
 
 // --- Album mapping for album.getinfo endpoint ---
 fun AlbumDetail.toDomainAlbum(): Album {
-    val primaryImage = image.lastOrNull { it.size == "extralarge" }?.url
+    val primaryImage = image.lastOrNull { it?.size == "extralarge" }?.url
         ?: image.firstOrNull()?.url
         ?: ""
 
@@ -66,16 +66,16 @@ fun AlbumDetail.toDomainAlbum(): Album {
         summary = wiki?.summary?.sanitizeWikiText() ?: "No description available"
     )
 }
-fun TrackDetail.toDomainTrack(): Track {
-    return Track(
-        id = generateTrackId(artist, name),
-        name = name,
-        artist = artist,
-        lastFmUrl = url ?: "",
-        playcount = playcount?.toIntOrNull() ?: 0,
-
-    )
-}
+//fun TrackDetail.toDomainTrack(): Track {
+//    return Track(
+//        id = generateTrackId(artist, name),
+//        name = name,
+//        artist = artist,
+//        lastFmUrl = url ?: "",
+//        playcount = playcount?.toIntOrNull() ?: 0,
+//
+//    )
+//}
 
 // Helper extensions
 private fun List<Image>.getLargestImageUrl(): String {

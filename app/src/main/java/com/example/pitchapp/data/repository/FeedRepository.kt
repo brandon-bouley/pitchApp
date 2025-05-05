@@ -79,23 +79,21 @@ class FeedRepository(
         }
     }
 
-    private suspend fun processRecentReviews(
-        reviews: List<Review>
-    ): List<FeedItem.ReviewItem> {
-        return reviews.map { review ->
-            val album = when (val result = musicRepository.getAlbumFromFirestore(review.albumId)) {
-                is Result.Success -> result.data
-                is Result.Error -> {
-                    Log.w("FEED_REPO", "Missing album ${review.albumId}", result.exception)
-                    null
-                }
-                else -> throw IllegalStateException("Unexpected result type")
-            }
-
-            FeedItem.ReviewItem(
-                review = review,
-                album = album
-            )
-        }
-    }
+//    private suspend fun processRecentReviews(
+//        reviews: List<Review>
+//    ): List<FeedItem.ReviewItem> {
+//        return reviews.map { review ->
+//            val album = when (val result = musicRepository.getAlbumFromFirestore(review.albumId)) {
+//                is Result.Success -> result.data
+//                is Result.Error -> {
+//                    Log.w("FEED_REPO", "Missing album ${review.albumId}", result.exception)
+//                    null
+//                }
+//                else -> throw IllegalStateException("Unexpected result type")
+//            }
+//
+//
+//            FeedItem.ReviewItem(review,album)
+//        }
+//    }
 }

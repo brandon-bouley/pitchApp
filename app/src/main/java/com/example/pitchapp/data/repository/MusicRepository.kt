@@ -12,7 +12,6 @@ import com.example.pitchapp.data.model.toDomainAlbum
 import com.example.pitchapp.data.model.toDomainArtist
 import com.example.pitchapp.data.model.Result
 import com.example.pitchapp.data.model.Track
-import com.example.pitchapp.data.model.toDomainTrack
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
@@ -42,15 +41,14 @@ class MusicRepository @Inject constructor(
     }
 
     private val db = Firebase.firestore("newpitchdb")
-    private val albumsRef = db.collection("albums")
-
-    suspend fun getTopTracks(limit: Int = 11): List<RandomTrack> {
+    private val albumsref = db.collection("albums")
+    suspend fun getTopTracks(limit: Int = 11): List<Album> {
         return try {
             val response = lastFmService.getTopTracks(
                 method = "chart.gettoptracks",
                 limit = limit
             )
-            response.tracks.track // assuming TopTracksResponse has a 'tracks' field containing a list of tracks
+            response.tracks // assuming TopTracksResponse has a 'tracks' field containing a list of tracks
         } catch (e: Exception) {
             Log.e("MusicRepository", "Fetching top tracks failed", e)
             emptyList()
@@ -246,33 +244,33 @@ class MusicRepository @Inject constructor(
 
     // ----- Track DETAIL -----
 
-
-    suspend fun getTrackInfo(
-        artist: String? = null,
-        track: String? = null,
-        mbid: String? = null
-    ): Result<Track> =
-        try {
-            require(artist != null || mbid != null) {
-                "Must provide either artist+track or MBID"
-            }
-
-            val resp = lastFmService.getTrackInfo(
-                method = "track.getinfo",
-                artist = artist ?: "",
-                track = track ?: "",
-                mbid = mbid
-            )
-
-
-            val domain = resp.track.toDomainTrack()
-            Result.Success(domain)
-        } catch (e: Exception) {
-            Log.e("MusicRepository", "Track details fetch failed", e)
-            Result.Error(e)
-        }
-
-
+//
+//    suspend fun getTrackInfo(
+//        artist: String? = null,
+//        track: String? = null,
+//        mbid: String? = null
+//    ): Result<Track> =
+//        try {
+//            require(artist != null || mbid != null) {
+//                "Must provide either artist+track or MBID"
+//            }
+//
+//            val resp = lastFmService.getTrackInfo(
+//                method = "track.getinfo",
+//                artist = artist ?: "",
+//                track = track ?: "",
+//                mbid = mbid
+//            )
+//
+//
+//            val domain = resp.track.toDomainTrack()
+//            Result.Success(domain)
+//        } catch (e: Exception) {
+//            Log.e("MusicRepository", "Track details fetch failed", e)
+//            Result.Error(e)
+//        }
+//
+//
 }
 
 

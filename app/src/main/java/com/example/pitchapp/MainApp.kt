@@ -53,11 +53,8 @@ import com.example.pitchapp.ui.navigation.LogoHeader
 import com.example.pitchapp.ui.theme.PitchAppTheme
 import com.example.pitchapp.ui.screens.profile.LoginScreen
 import com.example.pitchapp.ui.screens.profile.SignUpScreen
-import com.example.pitchapp.ui.screens.review.AddTrackReviewScreen
-import com.example.pitchapp.ui.screens.search.TrackDetailScreen
 import com.example.pitchapp.viewmodel.AuthViewModel
-import com.example.pitchapp.viewmodel.TrackDetailViewModel
-import com.example.pitchapp.viewmodel.TrackReviewViewModel
+
 
 
 
@@ -67,26 +64,24 @@ fun MainApp(
     reviewViewModelFactory: ReviewViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
-    trackDetailViewModelFactory: TrackDetailViewModelFactory,
     authViewModel: AuthViewModel,
     musicRepository: MusicRepository,
     reviewRepository: ReviewRepository,
-    trackReviewViewModelFactory: RandomTrackViewModelFactory,
-    selectedTrack: RandomTrack?,
+    selectedTrack: Album?,
     shouldReviewTrack: Boolean,
     onReviewComplete: () -> Unit
 ) {
     val navController = rememberNavController()
-    val trackReviewViewModel: TrackReviewViewModel =
-        viewModel(factory = trackReviewViewModelFactory)
 
     val systemDarkTheme = isSystemInDarkTheme()
     var darkTheme by remember { mutableStateOf(systemDarkTheme) }
+    val reviewViewModel: ReviewViewModel =
+        viewModel(factory = reviewViewModelFactory)
 
     LaunchedEffect(shouldReviewTrack, selectedTrack) {
         if (shouldReviewTrack && selectedTrack != null) {
-            trackReviewViewModel.setSelectedTrack(selectedTrack)
-            navController.navigate("add_track_review")
+            reviewViewModel.setSelectedAlbum(selectedTrack)
+            navController.navigate("add_review")
             onReviewComplete()
         }
     }
@@ -161,40 +156,10 @@ fun MainApp(
                             )
                         )
 
-                        val reviewViewModel =
-                            viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
 
                         AlbumDetailScreen(
                             albumId = albumId,
                             viewModel = albumDetailViewModel,
-                            reviewViewModel = reviewViewModel,
-                            navController = navController
-                        )
-                    }
-                    composable(
-                        route = Screen.TrackDetail.route,
-                        arguments = listOf(
-                            navArgument(Screen.TrackDetail.ARG_TRACK_ID) {
-                                type = NavType.StringType
-                            }
-                        )
-                    ) { backStackEntry ->
-                        val trackId =
-                            backStackEntry.arguments?.getString(Screen.TrackDetail.ARG_TRACK_ID)
-                                ?: return@composable
-
-                        val trackDetailViewModel = viewModel<TrackDetailViewModel>(
-                            factory = trackDetailViewModelFactory)
-
-                        val reviewViewModel =
-                            viewModel<TrackReviewViewModel>(factory = trackReviewViewModelFactory)
-//                        val reviewViewModel =
-//                            viewModel<ReviewViewModel>(factory = ReviewViewModelFactory)
-
-
-                        TrackDetailScreen(
-                            trackId = trackId,
-                            viewModel = trackDetailViewModel,
                             reviewViewModel = reviewViewModel,
                             navController = navController
                         )
@@ -256,13 +221,6 @@ fun MainApp(
                         )
                     }
 
-                    composable("add_track_review") {
-                        AddTrackReviewScreen(
-                            navController = navController,
-                            trackReviewViewModel = trackReviewViewModel,
-                            authViewModel = authViewModel
-                        )
-                    }
                 }
             }
         }

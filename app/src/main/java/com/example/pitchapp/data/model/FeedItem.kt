@@ -2,10 +2,8 @@ package com.example.pitchapp.data.model
 
 sealed class FeedItem {
     data class ReviewItem(
-        val review: Review?=null,
-        val trackReview: TrackReview? = null,
-        val album: Album? = null,
-        val track: RandomTrack? = null
+        val review: Review,
+        val album: Album,
     ) : FeedItem()
 
     data class AlbumItem(

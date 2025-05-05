@@ -1,5 +1,6 @@
 package com.example.pitchapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pitchapp.data.model.FeedItem
@@ -32,6 +33,7 @@ class FeedViewModel(
                     add(FeedItem.SectionHeader("Recent Reviews"))
                     addAll(
                         recentResult.map { review ->
+                            Log.d("Reviews","review album details: ${review.albumDetails!!}")
                             FeedItem.ReviewItem(
                                 review = review,
                                 album = review.albumDetails // Should be populated in repository

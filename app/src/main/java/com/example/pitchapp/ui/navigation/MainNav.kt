@@ -49,10 +49,6 @@ sealed class Screen(val route: String) {
         const val ARG_ALBUM_ID = "albumId"
         fun createRoute(albumId: String) = "album_detail/$albumId"
     }
-    object TrackDetail : Screen("track_detail/{trackId}") {
-        const val ARG_TRACK_ID = "trackId"
-        fun createRoute(trackId: String) = "track_detail/$trackId"
-    }
 
     object Profile : Screen("profile/{username}") {
         const val ARG_USERNAME = "username"

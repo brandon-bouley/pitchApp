@@ -5,6 +5,7 @@ import com.example.pitchapp.data.model.ArtistTopAlbumsResponse
 import com.example.pitchapp.data.model.AlbumInfoResponse
 import com.example.pitchapp.data.model.AlbumSearchResponse
 import com.example.pitchapp.data.model.ArtistSearchResponse
+import com.example.pitchapp.data.model.RandomSearchResponse
 import com.example.pitchapp.data.model.TopTracksResponse
 import com.example.pitchapp.data.model.TrackInfoResponse
 import com.example.pitchapp.data.model.TrackSearchResponse
@@ -17,7 +18,7 @@ interface LastFmService {
     suspend fun getTopTracks(
         @Query("method") method: String = "chart.gettoptracks",
         @Query("limit") limit: Int = 17
-    ): TopTracksResponse
+    ): RandomSearchResponse
     //got rid of Call
 
     @GET(".")
@@ -44,6 +45,7 @@ interface LastFmService {
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 30
     ): AlbumSearchResponse
+
     @GET(".")
     suspend fun getAlbumInfo(
         @Query("method") method: String = "album.getInfo",
@@ -52,21 +54,22 @@ interface LastFmService {
         @Query("mbid") mbid: String? = null,
         @Query("autocorrect") autocorrect: Int = 1
     ): AlbumInfoResponse
-
-    @GET(".")
-    suspend fun searchTracks(
-        @Query("method") method: String = "track.search",
-        @Query("track") query: String,
-        @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 30
-    ): TrackSearchResponse
-
-    @GET(".")
-    suspend fun getTrackInfo(
-        @Query("method") method: String = "track.getInfo",
-        @Query("artist") artist: String,
-        @Query("track") track: String,
-        @Query("mbid") mbid: String? = null,
-        @Query("autocorrect") autocorrect: Int = 1
-    ): TrackInfoResponse
 }
+
+//    @GET(".")
+//    suspend fun searchTracks(
+//        @Query("method") method: String = "track.search",
+//        @Query("track") query: String,
+//        @Query("page") page: Int = 1,
+//        @Query("limit") limit: Int = 30
+//    ): TrackSearchResponse
+//
+//    @GET(".")
+//    suspend fun getTrackInfo(
+//        @Query("method") method: String = "track.getInfo",
+//        @Query("artist") artist: String,
+//        @Query("track") track: String,
+//        @Query("mbid") mbid: String? = null,
+//        @Query("autocorrect") autocorrect: Int = 1
+//    ): TrackInfoResponse
+//}

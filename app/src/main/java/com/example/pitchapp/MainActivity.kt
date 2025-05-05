@@ -20,7 +20,6 @@ import com.example.pitchapp.data.repository.FeedRepository
 import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ProfileRepository
 import com.example.pitchapp.data.repository.ReviewRepository
-import com.example.pitchapp.data.repository.TrackReviewRepository
 import android.hardware.SensorManager
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
 import com.example.pitchapp.viewmodel.AuthViewModel
@@ -28,7 +27,6 @@ import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ProfileViewModel
 import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
-import com.example.pitchapp.viewmodel.TrackReviewViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
@@ -41,10 +39,10 @@ import kotlinx.coroutines.selects.select
 import kotlin.random.Random
 import android.hardware.Sensor
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.ui.components.ShakeDetector
-import com.example.pitchapp.data.model.RandomTrack
-import com.example.pitchapp.data.model.Track
-import com.example.pitchapp.viewmodel.TrackDetailViewModel
+
+
 
 
 class ProfileViewModelFactory(
@@ -61,22 +59,22 @@ class ProfileViewModelFactory(
     }
 }
 
-class RandomTrackViewModelFactory(
-    private val repository: TrackReviewRepository,
-    private val authViewModel: AuthViewModel
-):  ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(
-        modelClass: Class<T>,
-        extras: CreationExtras
-    ): T {
-        return TrackReviewViewModel(
-            repository = repository,
-            authViewModel = authViewModel
-
-        ) as T
-    }
-}
+//class RandomTrackViewModelFactory(
+//    private val repository: TrackReviewRepository,
+//    private val authViewModel: AuthViewModel
+//):  ViewModelProvider.Factory {
+//    @Suppress("UNCHECKED_CAST")
+//    override fun <T : ViewModel> create(
+//        modelClass: Class<T>,
+//        extras: CreationExtras
+//    ): T {
+//        return TrackReviewViewModel(
+//            repository = repository,
+//            authViewModel = authViewModel
+//
+//        ) as T
+//    }
+//}
 
 // FeedViewModelFactory
 class FeedViewModelFactory(
@@ -137,22 +135,7 @@ class AlbumDetailViewModelFactory(
         ) as T
     }
 }
-class TrackDetailViewModelFactory(
-    private val musicRepository: MusicRepository,
-    private val trackRepository: TrackReviewRepository
-) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(
-        modelClass: Class<T>,
-        extras: CreationExtras
-    ): T {
-        return TrackDetailViewModel(
-            musicRepository = musicRepository,
-            trackRepository = trackRepository,
-            savedStateHandle = extras.createSavedStateHandle()
-        ) as T
-    }
-}
+
 
 class MainActivity : ComponentActivity() {
     private lateinit var sensorManager: SensorManager
@@ -168,7 +151,7 @@ class MainActivity : ComponentActivity() {
 
         // Repository initialization
         val reviewRepository = ReviewRepository()
-        val trackRepository = TrackReviewRepository()
+
         val feedRepository = FeedRepository(
             reviewRepository = reviewRepository,
             musicRepository = musicRepository,
@@ -177,7 +160,7 @@ class MainActivity : ComponentActivity() {
 
 
         // ViewModel factories
-        val trackDetailFactory = TrackDetailViewModelFactory(musicRepository, trackRepository)
+//        val trackDetailFactory = TrackDetailViewModelFactory(musicRepository, trackRepository)
 
         val feedViewModelFactory = FeedViewModelFactory(feedRepository)
         val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
@@ -191,7 +174,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             var showDialog by remember { mutableStateOf(false) }
-            var selectedTrack by remember { mutableStateOf<RandomTrack?>(null) }
+            var selectedTrack by remember { mutableStateOf<Album?>(null)}
             var shouldReviewTrack by remember { mutableStateOf(false) }
 
 
@@ -214,21 +197,21 @@ class MainActivity : ComponentActivity() {
                     text = {
                         Column {
                             Text(
-                                text = "🎵 ${selectedTrack?.name}",
+                                text = "🎵 ${selectedTrack?.title}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
 
                             Text(
-                                text = "👤 Artist: ${selectedTrack?.artist?.name}",
+                                text = "👤 Artist: ${selectedTrack?.artist}",
                                 style = MaterialTheme.typography.bodyMedium
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "🔊 Playcount: ${selectedTrack?.playcount}",
+                                text = "🔊 Playcount: ${selectedTrack?.playCount}",
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(
@@ -271,7 +254,7 @@ class MainActivity : ComponentActivity() {
                     feedViewModelFactory = feedViewModelFactory,
                     searchViewModelFactory = searchViewModelFactory,
                     profileViewModelFactory = profileViewModelFactory,
-                    trackDetailViewModelFactory = trackDetailFactory,
+
                     selectedTrack = selectedTrack,
                     shouldReviewTrack = shouldReviewTrack,
                     onReviewComplete = { shouldReviewTrack = false }
@@ -304,8 +287,7 @@ private fun FirebaseAuthHandler(
     feedViewModelFactory: FeedViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
-    trackDetailViewModelFactory: TrackDetailViewModelFactory,
-    selectedTrack: RandomTrack?,
+    selectedTrack: Album?,
     shouldReviewTrack: Boolean,
     onReviewComplete: () -> Unit
 
@@ -317,15 +299,13 @@ private fun FirebaseAuthHandler(
         reviewRepository = reviewRepository,
         authViewModel = authViewModel
     )
-    val trackReviewRepository = TrackReviewRepository()
-    val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository,authViewModel )
+//    val trackReviewRepository = TrackReviewRepository()
+//    val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository,authViewModel )
     MainApp(
         feedViewModelFactory = feedViewModelFactory,
         searchViewModelFactory = searchViewModelFactory,
         profileViewModelFactory = profileViewModelFactory,
         reviewViewModelFactory = reviewViewModelFactory,
-        trackReviewViewModelFactory = trackViewModelFactory,
-        trackDetailViewModelFactory = trackDetailViewModelFactory,
         selectedTrack = selectedTrack,
         shouldReviewTrack = shouldReviewTrack,
         onReviewComplete = onReviewComplete,
