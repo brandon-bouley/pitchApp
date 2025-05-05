@@ -49,13 +49,18 @@ import com.example.pitchapp.ui.components.AlbumCard
 import com.example.pitchapp.ui.components.ReviewCard
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.Arrangement
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.LaunchedEffect
 import com.example.pitchapp.viewmodel.ReviewViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.navigation.compose.*
+
+
 
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
@@ -69,22 +74,27 @@ fun SearchScreen(
     val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
     val isCompactLayout = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
 
+    val navigateToUserProfile: (String) -> Unit = { userId ->
+        navController.navigate("profile/$userId")
+    }
 
     if (isCompactLayout) {
-        CompactSearchLayout(navController, viewModel, reviewViewModel)
+        CompactSearchLayout(navController, viewModel, reviewViewModel, navigateToUserProfile)
     } else {
-        ExpandedSearchLayout(navController, viewModel, reviewViewModel)
+        ExpandedSearchLayout(navController, viewModel, reviewViewModel, navigateToUserProfile)
     }
+
 }
 
 @Composable
-private fun CompactSearchLayout(navController: NavController, viewModel: SearchViewModel, reviewViewModel: ReviewViewModel) {
+private fun CompactSearchLayout(navController: NavController, viewModel: SearchViewModel, reviewViewModel: ReviewViewModel, navigateToUserProfile: (String) -> Unit) {
     Column(Modifier.fillMaxSize()) {
         SearchContent(
             viewModel = viewModel,
             onAlbumSelected = { album ->
                 viewModel.onAlbumClicked(navController, album)
-            }
+            },
+            navigateToUserProfile = navigateToUserProfile
         )
     }
 }
@@ -93,7 +103,8 @@ private fun CompactSearchLayout(navController: NavController, viewModel: SearchV
 private fun ExpandedSearchLayout(
     navController: NavController,
     viewModel: SearchViewModel,
-    reviewViewModel: ReviewViewModel
+    reviewViewModel: ReviewViewModel,
+    navigateToUserProfile: (String) -> Unit
 ) {
     Row(Modifier.fillMaxSize()) {
         Column(Modifier.weight(0.4f)) {
@@ -101,7 +112,8 @@ private fun ExpandedSearchLayout(
                 viewModel = viewModel,
                 onAlbumSelected = { album ->
                     viewModel.selectAlbum(album)
-                }
+                },
+                navigateToUserProfile = navigateToUserProfile
             )
         }
 
@@ -116,7 +128,8 @@ private fun SearchContent(
     viewModel: SearchViewModel,
     onAlbumSelected: (Album) -> Unit = { album ->
         viewModel.selectAlbum(album)
-    }
+    } ,
+            navigateToUserProfile: (String) -> Unit
 ) {
     val searchState by viewModel.searchState.collectAsState()
     val selectedArtist by viewModel.selectedArtist.collectAsState()
@@ -130,7 +143,11 @@ private fun SearchContent(
     Column(Modifier.fillMaxSize()) {
         SearchField(
             query = searchState.searchQuery,
-            onQueryChange = viewModel::updateSearchQuery,
+            onQueryChange = { query ->
+                viewModel.updateSearchQuery(query)
+                if (searchState.searchType == SearchViewModel.SearchType.USER) {
+                    viewModel.searchUsers(query)
+                } },
             searchType = searchState.searchType,
             viewModel = viewModel
         )
@@ -143,156 +160,190 @@ private fun SearchContent(
                 message = searchState.error!!,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
+
             else -> when (searchState.searchType) {
                 SearchViewModel.SearchType.ARTIST -> ArtistResultsList(
                     results = searchState.results.filterIsInstance<Artist>(),
-                    onSelect = { artist ->
-                        viewModel.getArtistTopAlbums(artist.name)
-                    },
+                    onSelect = { artist -> viewModel.getArtistTopAlbums(artist.name) },
                     modifier = Modifier.fillMaxWidth()
                 )
+
                 SearchViewModel.SearchType.ALBUM -> AlbumResultsList(
                     albums = searchState.results.filterIsInstance<Album>(),
-                    onSelect = { album ->
-                        onAlbumSelected(album)
-                    },
+                    onSelect = { album -> onAlbumSelected(album) },
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-        }
-    }
-}
 
-@Composable
-private fun DetailPane(
-    viewModel: SearchViewModel,
-    navController: NavController
-) {
-    val searchState by viewModel.searchState.collectAsState()
-
-    Box(Modifier.fillMaxSize()) {
-        when {
-            searchState.isLoading -> SpinningRecord()
-            searchState.error != null -> ErrorMessage(
-                message = searchState.error!!,
-                modifier = Modifier.align(Alignment.Center)
-            )
-            searchState.selectedAlbumDetails != null -> {
-                val (album, reviews) = searchState.selectedAlbumDetails!!
-                Column(Modifier.fillMaxSize()) {
-                    AlbumDetailContent(
-                        album = album,
-                        reviews = reviews,
-                        modifier = Modifier.weight(1f),
-                        navController = navController
-                    )
-
-
-                                Button(
-                                onClick = { /* TODO */
-                                },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text("Leave a Review")
-                    }
-                }
-            }
-            else -> Text(
-                "Select an album to view details",
-                modifier = Modifier.align(Alignment.Center),
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-    }
-}
-
-@Composable
-fun SearchField(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    searchType: SearchViewModel.SearchType,
-    viewModel: SearchViewModel
-) {
-    Column(Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = {
-                if (searchType == SearchViewModel.SearchType.ALBUM) {
-                    onQueryChange("")
-                    viewModel.setSearchType(SearchViewModel.SearchType.ARTIST)
-                }
-                onQueryChange(it)
-            },
-            label = { Text(when (searchType) {
-                SearchViewModel.SearchType.ARTIST -> "Search artists"
-                SearchViewModel.SearchType.ALBUM -> "Search albums"
-            })},
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Search
-            ),
-            singleLine = true
-        )
-    }
-}
-
-@Composable
-fun AlbumDetailContent(
-    album: Album,
-    reviews: List<Review>,
-    modifier: Modifier = Modifier,
-    navController: NavController
-) {
-    Column(modifier.padding(16.dp)) {
-        Text(album.title, style = MaterialTheme.typography.headlineSmall)
-        Text(album.artist, style = MaterialTheme.typography.titleMedium)
-
-        Spacer(Modifier.height(16.dp))
-
-        NetworkImage(
-            url = album.artworkUrl,
-            modifier = Modifier
-                .size(200.dp)
-                .align(Alignment.CenterHorizontally)
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        Text("Reviews (${reviews.size})", style = MaterialTheme.typography.titleMedium)
-
-        LazyColumn {
-            items(reviews) { review ->
-                ReviewCard(
-                    reviewItem = FeedItem.ReviewItem(review, album),
-                    onClick = {
-                        navController.navigate(
-                            Screen.Profile.createRoute(review.username))
-                    }
+                SearchViewModel.SearchType.USER -> UserSearchResults(
+                    users = viewModel.userResults.collectAsState().value,
+                    onUserClick = navigateToUserProfile
                 )
             }
         }
     }
 }
 
-@Composable
-fun NetworkImage(
-    url: String,
-    modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Fit
-) {
-    AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(url)
-            .crossfade(true)
-            .build(),
-        contentDescription = null,
-        modifier = modifier,
-        contentScale = contentScale
-    )
-}
+    @Composable
+    private fun DetailPane(
+        viewModel: SearchViewModel,
+        navController: NavController
+    ) {
+        val searchState by viewModel.searchState.collectAsState()
+
+        Box(Modifier.fillMaxSize()) {
+            when {
+                searchState.isLoading -> SpinningRecord()
+                searchState.error != null -> ErrorMessage(
+                    message = searchState.error!!,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+
+                searchState.selectedAlbumDetails != null -> {
+                    val (album, reviews) = searchState.selectedAlbumDetails!!
+                    Column(Modifier.fillMaxSize()) {
+                        AlbumDetailContent(
+                            album = album,
+                            reviews = reviews,
+                            modifier = Modifier.weight(1f),
+                            navController = navController
+                        )
+
+
+                        Button(
+                            onClick = { /* TODO */
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text("Leave a Review")
+                        }
+                    }
+                }
+
+                else -> Text(
+                    "Select an album to view details",
+                    modifier = Modifier.align(Alignment.Center),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun SearchField(
+        query: String,
+        onQueryChange: (String) -> Unit,
+        searchType: SearchViewModel.SearchType,
+        viewModel: SearchViewModel
+    ) {
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(
+                    onClick = { viewModel.setSearchType(SearchViewModel.SearchType.ALBUM) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (searchType == SearchViewModel.SearchType.ALBUM) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Text("Albums")
+                }
+                Button(
+                    onClick = { viewModel.setSearchType(SearchViewModel.SearchType.USER) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (searchType == SearchViewModel.SearchType.USER) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Text("Users")
+                }
+            }
+        }
+
+            OutlinedTextField(
+                value = query,
+                onValueChange = {
+                    if (searchType == SearchViewModel.SearchType.ALBUM) {
+                        onQueryChange("")
+                        viewModel.setSearchType(SearchViewModel.SearchType.ARTIST)
+                    }
+                    onQueryChange(it)
+                },
+                label = {
+                    Text(
+                        when (searchType) {
+                            SearchViewModel.SearchType.ARTIST -> "Search artists"
+                            SearchViewModel.SearchType.ALBUM -> "Search albums"
+                            SearchViewModel.SearchType.USER -> "Search users"
+                        }
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                singleLine = true
+            )
+        }
+
+    @Composable
+    fun AlbumDetailContent(
+        album: Album,
+        reviews: List<Review>,
+        modifier: Modifier = Modifier,
+        navController: NavController
+    ) {
+        Column(modifier.padding(16.dp)) {
+            Text(album.title, style = MaterialTheme.typography.headlineSmall)
+            Text(album.artist, style = MaterialTheme.typography.titleMedium)
+
+            Spacer(Modifier.height(16.dp))
+
+            NetworkImage(
+                url = album.artworkUrl,
+                modifier = Modifier
+                    .size(200.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            Text("Reviews (${reviews.size})", style = MaterialTheme.typography.titleMedium)
+
+            LazyColumn {
+                items(reviews) { review ->
+                    ReviewCard(
+                        reviewItem = FeedItem.ReviewItem(review, album),
+                        onClick = {
+                            navController.navigate(
+                                Screen.Profile.createRoute(review.username)
+                            )
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun NetworkImage(
+        url: String,
+        modifier: Modifier = Modifier,
+        contentScale: ContentScale = ContentScale.Fit
+    ) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(url)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            modifier = modifier,
+            contentScale = contentScale
+        )
+    }
+
+
+
+
 
 
 

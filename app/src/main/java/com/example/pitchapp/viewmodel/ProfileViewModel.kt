@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import com.example.pitchapp.data.model.UserSummary
 
 
 
@@ -115,7 +116,23 @@ class ProfileViewModel(
                 onFailure(e.message ?: "Unfollow failed")
             }
         }
+    fun fetchUserSummaries(userIds: List<String>, onResult: (List<UserSummary>) -> Unit) {
+        viewModelScope.launch {
+            val db = FirebaseFirestore.getInstance()
+            val users = mutableListOf<UserSummary>()
+            userIds.forEach { uid ->
+                val doc = db.collection("users").document(uid).get().await()
+                doc?.let {
+                    val displayName = it.getString("displayName") ?: "Unknown"
+                    users.add(UserSummary(uid, displayName))
+                }
+            }
+            onResult(users)
+        }
+    }
 }
+
+
 
 
 

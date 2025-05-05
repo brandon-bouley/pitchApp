@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import com.example.pitchapp.data.model.Profile
+import com.example.pitchapp.data.model.UserSummary
 import java.util.*
 
 
@@ -43,6 +44,8 @@ fun ProfileScreen(
     var isEditing by remember { mutableStateOf(false) }
     var editedBio by remember { mutableStateOf("") }
     var editedTheme by remember { mutableStateOf("light") }
+    var followers by remember { mutableStateOf<List<UserSummary>>(emptyList()) }
+    var following by remember { mutableStateOf<List<UserSummary>>(emptyList()) }
 
     if (userId == null) {
         // Not logged in
@@ -66,7 +69,9 @@ fun ProfileScreen(
         }
     } else {
         LaunchedEffect(userId) {
-            viewModel.loadProfile(userId!!)
+            userId?.let { uid ->
+                viewModel.loadProfile(uid)
+            }
         }
 
         when (val state = profileState) {
@@ -84,6 +89,14 @@ fun ProfileScreen(
                 LaunchedEffect(profile.themePreference) {
                     editedTheme = profile.themePreference
                 }
+                LaunchedEffect(profile) {
+                    viewModel.fetchUserSummaries(profile.followers) {
+                        followers = it
+                    }
+                    viewModel.fetchUserSummaries(profile.following) {
+                        following = it
+                    }
+                }
 
                 Column(
                     modifier = Modifier
@@ -92,6 +105,13 @@ fun ProfileScreen(
                 ) {
                     Text(profile.displayName, style = MaterialTheme.typography.headlineMedium)
                     Text("Joined in: ${formatTimestamp(profile.createdAt)}")
+                    UserList(title = "Followers", users = followers) { uid ->
+                        navController.navigate("profile/$uid")
+                    }
+
+                    UserList(title = "Following", users = following) { uid ->
+                        navController.navigate("profile/$uid")
+                    }
                     Text("Songs Rated: ${profile.reviewCount}")
                     Text("Average Rating: ${"%.1f".format(profile.averageRating)}")
                     Text("Theme: ${profile.themePreference.capitalize()}")

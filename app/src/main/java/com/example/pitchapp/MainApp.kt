@@ -41,7 +41,7 @@ import com.example.pitchapp.data.repository.ReviewRepository
 import com.example.pitchapp.ui.components.ThemeToggle
 import com.example.pitchapp.ui.screens.profile.ProfileScreen
 import com.example.pitchapp.ui.screens.search.AlbumDetailScreen
-import com.example.pitchapp.ui.screens.profile.ProfileScreen
+import com.example.pitchapp.ui.screens.profile.OtherUserProfileScreen
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
 import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ProfileViewModel
@@ -218,6 +218,19 @@ fun MainApp(
                             profileUserId = userId,
                             authViewModel = authViewModel,
                             onThemeChanged = { darkThemeOverride = null }
+                        )
+                    }
+                    composable(
+                        route = "profile/{otherUserId}",
+                        arguments = listOf(navArgument("otherUserId") { nullable = false })
+                    ) { backStackEntry ->
+                        val userId = backStackEntry.arguments?.getString("otherUserId") ?: return@composable
+                        val profileVm = viewModel<ProfileViewModel>(factory = profileViewModelFactory, key = userId)
+                        OtherUserProfileScreen(
+                            navController = navController,
+                            profileUserId = userId,
+                            viewModel = profileVm,
+                            currentUserId = Firebase.auth.currentUser?.uid ?: ""
                         )
                     }
 

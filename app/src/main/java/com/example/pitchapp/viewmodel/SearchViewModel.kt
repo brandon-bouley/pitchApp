@@ -11,6 +11,7 @@ import com.example.pitchapp.data.model.Artist
 import com.example.pitchapp.data.model.Review
 import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ReviewRepository
+import com.example.pitchapp.data.repository.ProfileRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.example.pitchapp.data.model.Result
+import com.example.pitchapp.data.model.Profile
 import com.example.pitchapp.ui.navigation.Screen
+import com.example.pitchapp.data.model.UserSummary
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.tasks.await
+
+
 
 class SearchViewModel(
     private val musicRepository: MusicRepository,
@@ -44,6 +53,10 @@ class SearchViewModel(
 
     private var searchJob: Job? = null
 
+    //search users
+    private val _userResults = MutableStateFlow<List<UserSummary>>(emptyList())
+    val userResults: StateFlow<List<UserSummary>> = _userResults
+
     fun updateSearchQuery(query: String) {
         _searchState.update { it.copy(searchQuery = query) }
         searchJob?.cancel()
@@ -62,6 +75,32 @@ class SearchViewModel(
         }
     }
 
+    fun searchUsers(query: String) {
+        viewModelScope.launch {
+            try {
+                val snapshot = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .whereGreaterThanOrEqualTo("displayName", query)
+                    .whereLessThanOrEqualTo("displayName", query + '\uf8ff')
+                    .get()
+                    .await()
+
+                val users = snapshot.documents.mapNotNull { doc ->
+                    val profile = doc.toObject(Profile::class.java) ?: return@mapNotNull null
+                    UserSummary(profile.userId, profile.displayName)
+                }
+
+                _userResults.value = users
+            } catch (e: Exception) {
+                _searchState.value = _searchState.value.copy(error = e.message)
+            } finally {
+                _searchState.value = _searchState.value.copy(isLoading = false)
+            }
+        }
+    }
+
+
+
     private fun performSearch() {
         viewModelScope.launch {
             try {
@@ -70,6 +109,7 @@ class SearchViewModel(
                 val result = when (_searchState.value.searchType) {
                     SearchType.ARTIST -> musicRepository.searchArtists(_searchState.value.searchQuery)
                     SearchType.ALBUM -> musicRepository.searchAlbums(_searchState.value.searchQuery)
+                    SearchType.USER -> return@launch
                 }
 
                 when (result) {
@@ -240,7 +280,7 @@ class SearchViewModel(
         val searchType: SearchType = SearchType.ARTIST
     )
 
-    enum class SearchType { ARTIST, ALBUM }
+    enum class SearchType { ARTIST, ALBUM, USER }
 
     fun setSearchType(type: SearchType) {
         _searchState.update { it.copy(searchType = type) }

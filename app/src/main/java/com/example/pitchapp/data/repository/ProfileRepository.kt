@@ -9,7 +9,9 @@ import com.example.pitchapp.data.model.Review
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.example.pitchapp.data.model.UserSummary
 import kotlinx.coroutines.tasks.await
+
 
 class ProfileRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -44,4 +46,5 @@ class ProfileRepository {
             )
         ).await()
     }
+
 }
