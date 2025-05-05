@@ -44,8 +44,20 @@ class SearchViewModel(
     val isAlbumSelected: StateFlow<Boolean> = _isAlbumSelected.asStateFlow()
 
     private var searchJob: Job? = null
-
     fun updateSearchQuery(query: String) {
+        val wordLimit = 5
+        val wordCount = query.trim().split("\\s+".toRegex()).size
+
+        if (wordCount > wordLimit) {
+            _searchState.update {
+                it.copy(
+                    error = "Maximum $wordLimit words allowed in search",
+                    isLoading = false
+                )
+            }
+            return
+        }
+
         _searchState.update { it.copy(searchQuery = query) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
@@ -62,6 +74,7 @@ class SearchViewModel(
             }
         }
     }
+
 
     private fun performSearch() {
         viewModelScope.launch {
@@ -248,4 +261,5 @@ class SearchViewModel(
         _searchState.value = SearchState()
         _isAlbumSelected.value = false
     }
+
 }

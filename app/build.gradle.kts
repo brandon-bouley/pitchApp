@@ -107,5 +107,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.22")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation(kotlin("test"))
+
 
 }

@@ -18,10 +18,16 @@ import kotlinx.coroutines.tasks.await
 
 
 
+
 class ProfileViewModel(
     private val repository: ProfileRepository
 
 ) : ViewModel() {
+    sealed class ProfileState {
+        data object Loading : ProfileState()
+        data class Success(val profile: Profile) : ProfileState()
+        data class Error(val message: String) : ProfileState()
+    }
 
     private val _profileState = MutableStateFlow<ProfileState>(ProfileState.Loading)
     val profileState: StateFlow<ProfileState> = _profileState
@@ -109,9 +115,4 @@ class ProfileViewModel(
 }
 
 
-    sealed class ProfileState {
-        data object Loading : ProfileState()
-        data class Success(val profile: Profile) : ProfileState()
-        data class Error(val message: String) : ProfileState()
-    }
-}
+

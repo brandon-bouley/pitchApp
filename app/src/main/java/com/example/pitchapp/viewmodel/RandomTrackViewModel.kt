@@ -6,7 +6,9 @@ import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.model.Result
 import com.example.pitchapp.data.model.Review
 import com.example.pitchapp.data.repository.TrackReviewRepository
+import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -40,28 +42,53 @@ class TrackReviewViewModel(
     }
 
     fun submitReview(userId: String, username: String, onComplete: () -> Unit) {
-        val track = _selectedTrack.value ?: return
+        val track = _selectedTrack.value
+        val text = _reviewText.value
+        val stars = _rating.value
+
+        if (track == null) {
+            _submissionResult.value = Result.Error(
+                IllegalArgumentException("You must select a track before submitting a review")
+            )
+            return
+        }
+
+        if (text.isBlank() || stars < 0.5f) {
+            _submissionResult.value = Result.Error(
+                IllegalArgumentException("Please write a review and select a rating of at least 0.5 stars")
+            )
+            return
+        }
 
         val review = Review(
             id = "",
             albumId = track.mbid ?: "${track.artist.name}-${track.name}",
             userId = userId,
-            username = username,
-            content = _reviewText.value,
-            rating = _rating.value,
+            username = username.ifBlank { "Anonymous" },
+            content = text,
+            rating = stars,
             timestamp = Timestamp.now()
         )
 
         viewModelScope.launch {
-            val result = repository.insertTrackReview(review)
-            _submissionResult.value = result
-            if (result is Result.Success) {
-                _reviewText.value = ""
-                _rating.value = 0f
-                onComplete()
+//            _submissionResult.value = null // Optional: clear previous result
+
+            try {
+                val result = repository.insertTrackReview(review)
+                _submissionResult.value = result
+
+                if (result is Result.Success) {
+                    _reviewText.value = ""
+                    _rating.value = 0f
+                    onComplete()
+                }
+            } catch (e: Exception) {
+                _submissionResult.value = Result.Error(e)
             }
         }
     }
+
+
 
     fun clearReviewState() {
         _selectedTrack.value = null
