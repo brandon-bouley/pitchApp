@@ -11,6 +11,8 @@ import com.example.pitchapp.data.remote.LastFmService
 import com.example.pitchapp.data.model.toDomainAlbum
 import com.example.pitchapp.data.model.toDomainArtist
 import com.example.pitchapp.data.model.Result
+import com.example.pitchapp.data.model.Track
+import com.example.pitchapp.data.model.toDomainTrack
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
@@ -27,6 +29,11 @@ class MusicRepository @Inject constructor(
             return normalized.sha256()
         }
 
+        fun generateTrackId(artist: String, title: String): String {
+            val normalized = "${artist.trim().lowercase()}|${title.trim().lowercase()}"
+            return normalized.sha256()
+        }
+
         private fun String.sha256(): String {
             val bytes = MessageDigest.getInstance("SHA-256")
                 .digest(this.toByteArray(Charsets.UTF_8))
@@ -37,11 +44,11 @@ class MusicRepository @Inject constructor(
     private val db = Firebase.firestore("newpitchdb")
     private val albumsRef = db.collection("albums")
 
-   suspend fun getTopTracks(limit: Int = 11): List<RandomTrack> {
+    suspend fun getTopTracks(limit: Int = 11): List<RandomTrack> {
         return try {
             val response = lastFmService.getTopTracks(
-                method="chart.gettoptracks",
-                limit=limit
+                method = "chart.gettoptracks",
+                limit = limit
             )
             response.tracks.track // assuming TopTracksResponse has a 'tracks' field containing a list of tracks
         } catch (e: Exception) {
@@ -81,6 +88,36 @@ class MusicRepository @Inject constructor(
         }
     }
 
+    suspend fun getTrackFromFirestore(trackId: String): Result<Track> {
+        return try {
+            val snapshot = db.collection("tracks")
+                .document(trackId)
+                .get()
+                .await()
+
+            if (snapshot.exists()) {
+                Result.Success(snapshot.toObject(Track::class.java)!!)
+            } else {
+                Result.Error(Exception("Track not found"))
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    // MusicRepository.kt
+    private suspend fun saveTrackToFirestore(track: Track): Result<Unit> {
+        return try {
+            db.collection("tracks")
+                .document(track.id)
+                .set(track)
+                .await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
     // ----- ARTIST SEARCH -----
     suspend fun searchArtists(
         query: String,
@@ -90,9 +127,9 @@ class MusicRepository @Inject constructor(
         try {
             val resp = lastFmService.searchArtists(
                 method = "artist.search",
-                query  = query,
-                page   = page,
-                limit  = limit
+                query = query,
+                page = page,
+                limit = limit
             )
             // resp.results.artistMatches.artists: List<ApiArtist>
             val list = resp.results.artistMatches.artists
@@ -102,6 +139,7 @@ class MusicRepository @Inject constructor(
             Log.e("MusicRepository", "Artist search failed", e)
             Result.Error(e)
         }
+
 
     // ----- ARTIST TOP ALBUMS -----
     suspend fun getArtistTopAlbums(
@@ -114,9 +152,9 @@ class MusicRepository @Inject constructor(
             val resp = lastFmService.getArtistTopAlbums(
                 method = "artist.gettopalbums",
                 artist = artist,
-                mbid   = mbid,
-                page   = page,
-                limit  = limit
+                mbid = mbid,
+                page = page,
+                limit = limit
             )
             // resp.topalbums.albums: List<ApiAlbumSimple>
             val list = resp.topalbums.albums
@@ -136,9 +174,9 @@ class MusicRepository @Inject constructor(
         try {
             val resp = lastFmService.searchAlbums(
                 method = "album.search",
-                query  = query,
-                page   = page,
-                limit  = limit
+                query = query,
+                page = page,
+                limit = limit
             )
             // resp.results.albumMatches.albums: List<ApiAlbum>
             val list = resp.results.albumMatches.albums
@@ -149,11 +187,12 @@ class MusicRepository @Inject constructor(
             Result.Error(e)
         }
 
+
     // ----- ALBUM DETAIL -----
     suspend fun getAlbumInfo(
         artist: String? = null,
-        album:  String? = null,
-        mbid:    String? = null
+        album: String? = null,
+        mbid: String? = null
     ): Result<Album> =
         try {
             require(artist != null || mbid != null) {
@@ -161,10 +200,10 @@ class MusicRepository @Inject constructor(
             }
 
             val resp = lastFmService.getAlbumInfo(
-                method    = "album.getinfo",
-                artist    = artist ?: "",
-                album     = album  ?: "",
-                mbid      = mbid
+                method = "album.getinfo",
+                artist = artist ?: "",
+                album = album ?: "",
+                mbid = mbid
             )
 
             // resp.album: AlbumDetail
@@ -198,12 +237,43 @@ class MusicRepository @Inject constructor(
                             )
                         }
                     }
+
                     is Result.Error -> apiResult
                 }
             }
         }
     }
 
+    // ----- Track DETAIL -----
+
+
+    suspend fun getTrackInfo(
+        artist: String? = null,
+        track: String? = null,
+        mbid: String? = null
+    ): Result<Track> =
+        try {
+            require(artist != null || mbid != null) {
+                "Must provide either artist+track or MBID"
+            }
+
+            val resp = lastFmService.getTrackInfo(
+                method = "track.getinfo",
+                artist = artist ?: "",
+                track = track ?: "",
+                mbid = mbid
+            )
+
+
+            val domain = resp.track.toDomainTrack()
+            Result.Success(domain)
+        } catch (e: Exception) {
+            Log.e("MusicRepository", "Track details fetch failed", e)
+            Result.Error(e)
+        }
 
 
 }
+
+
+

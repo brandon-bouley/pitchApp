@@ -14,8 +14,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.pitchapp.data.model.RandomTrack
+
 import com.example.pitchapp.data.remote.LastFmApi
 import com.example.pitchapp.data.repository.FeedRepository
 import com.example.pitchapp.data.repository.MusicRepository
@@ -41,10 +40,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlin.random.Random
 import android.hardware.Sensor
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pitchapp.ui.components.ShakeDetector
-
-
-
+import com.example.pitchapp.data.model.RandomTrack
+import com.example.pitchapp.data.model.Track
+import com.example.pitchapp.viewmodel.TrackDetailViewModel
 
 
 class ProfileViewModelFactory(
@@ -62,7 +62,8 @@ class ProfileViewModelFactory(
 }
 
 class RandomTrackViewModelFactory(
-    private val repository: TrackReviewRepository
+    private val repository: TrackReviewRepository,
+    private val authViewModel: AuthViewModel
 ):  ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(
@@ -71,6 +72,8 @@ class RandomTrackViewModelFactory(
     ): T {
         return TrackReviewViewModel(
             repository = repository,
+            authViewModel = authViewModel
+
         ) as T
     }
 }
@@ -134,15 +137,30 @@ class AlbumDetailViewModelFactory(
         ) as T
     }
 }
+class TrackDetailViewModelFactory(
+    private val musicRepository: MusicRepository,
+    private val trackRepository: TrackReviewRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+        extras: CreationExtras
+    ): T {
+        return TrackDetailViewModel(
+            musicRepository = musicRepository,
+            trackRepository = trackRepository,
+            savedStateHandle = extras.createSavedStateHandle()
+        ) as T
+    }
+}
 
 class MainActivity : ComponentActivity() {
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
-    private lateinit var musicRepository: MusicRepository
+
     private lateinit var onShake: () -> Unit
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d("ON CREATE","hi")
         super.onCreate(savedInstanceState)
         // Dependency setup
         val api = LastFmApi.service
@@ -150,15 +168,16 @@ class MainActivity : ComponentActivity() {
 
         // Repository initialization
         val reviewRepository = ReviewRepository()
+        val trackRepository = TrackReviewRepository()
         val feedRepository = FeedRepository(
             reviewRepository = reviewRepository,
             musicRepository = musicRepository,
         )
         val profileRepository = ProfileRepository()
-        val trackReviewRepository = TrackReviewRepository()
-        val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository)
+
 
         // ViewModel factories
+        val trackDetailFactory = TrackDetailViewModelFactory(musicRepository, trackRepository)
 
         val feedViewModelFactory = FeedViewModelFactory(feedRepository)
         val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
@@ -252,7 +271,7 @@ class MainActivity : ComponentActivity() {
                     feedViewModelFactory = feedViewModelFactory,
                     searchViewModelFactory = searchViewModelFactory,
                     profileViewModelFactory = profileViewModelFactory,
-                    trackReviewViewModelFactory = trackViewModelFactory,
+                    trackDetailViewModelFactory = trackDetailFactory,
                     selectedTrack = selectedTrack,
                     shouldReviewTrack = shouldReviewTrack,
                     onReviewComplete = { shouldReviewTrack = false }
@@ -285,7 +304,7 @@ private fun FirebaseAuthHandler(
     feedViewModelFactory: FeedViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
-    trackReviewViewModelFactory: RandomTrackViewModelFactory,
+    trackDetailViewModelFactory: TrackDetailViewModelFactory,
     selectedTrack: RandomTrack?,
     shouldReviewTrack: Boolean,
     onReviewComplete: () -> Unit
@@ -298,19 +317,21 @@ private fun FirebaseAuthHandler(
         reviewRepository = reviewRepository,
         authViewModel = authViewModel
     )
-
+    val trackReviewRepository = TrackReviewRepository()
+    val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository,authViewModel )
     MainApp(
         feedViewModelFactory = feedViewModelFactory,
         searchViewModelFactory = searchViewModelFactory,
         profileViewModelFactory = profileViewModelFactory,
         reviewViewModelFactory = reviewViewModelFactory,
-        trackReviewViewModelFactory = trackReviewViewModelFactory,
+        trackReviewViewModelFactory = trackViewModelFactory,
+        trackDetailViewModelFactory = trackDetailViewModelFactory,
         selectedTrack = selectedTrack,
         shouldReviewTrack = shouldReviewTrack,
         onReviewComplete = onReviewComplete,
         authViewModel = authViewModel,
         musicRepository = musicRepository,
-        reviewRepository = reviewRepository
+        reviewRepository = reviewRepository,
     )
 }
 

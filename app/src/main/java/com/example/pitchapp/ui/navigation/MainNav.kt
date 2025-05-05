@@ -37,6 +37,8 @@ sealed class Screen(val route: String) {
     object Feed : Screen("feed")
     object Search : Screen("search")
     object Results : Screen("results")
+    object Login : Screen("login")
+    object SignUp : Screen("signup")
 
     object AddReview : Screen("add_review/{albumId}") {
         const val ARG_ALBUM_ID = "albumId"
@@ -46,6 +48,10 @@ sealed class Screen(val route: String) {
     object AlbumDetail : Screen("album_detail/{albumId}") {
         const val ARG_ALBUM_ID = "albumId"
         fun createRoute(albumId: String) = "album_detail/$albumId"
+    }
+    object TrackDetail : Screen("track_detail/{trackId}") {
+        const val ARG_TRACK_ID = "trackId"
+        fun createRoute(trackId: String) = "track_detail/$trackId"
     }
 
     object Profile : Screen("profile/{username}") {

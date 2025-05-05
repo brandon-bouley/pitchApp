@@ -89,7 +89,7 @@ fun ReviewCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = reviewItem.review.username,
+                    text = reviewItem.review!!.username,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -110,7 +110,7 @@ fun ReviewCard(
             }
 
             RatingDisplay(
-                rating = reviewItem.review.rating.toFloat(),
+                rating = reviewItem.review!!.rating.toFloat(),
                 modifier = Modifier.padding(vertical = 4.dp)
             )
 

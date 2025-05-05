@@ -6,6 +6,8 @@ import com.example.pitchapp.data.model.AlbumInfoResponse
 import com.example.pitchapp.data.model.AlbumSearchResponse
 import com.example.pitchapp.data.model.ArtistSearchResponse
 import com.example.pitchapp.data.model.TopTracksResponse
+import com.example.pitchapp.data.model.TrackInfoResponse
+import com.example.pitchapp.data.model.TrackSearchResponse
 
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -35,14 +37,6 @@ interface LastFmService {
         @Query("limit") limit: Int = 50
     ): ArtistTopAlbumsResponse
 
-//    @GET(".")
-//    suspend fun getArtistInfo(
-//        @Query("method") method: String = "artist.getInfo",
-//        @Query("artist") artist: String,
-//        @Query("mbid") mbid: String? = null,
-//        @Query("autocorrect") autocorrect: Int = 1
-//    ): ArtistInfoResponse
-
     @GET(".")
     suspend fun searchAlbums(
         @Query("method") method: String = "album.search",
@@ -50,7 +44,6 @@ interface LastFmService {
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 30
     ): AlbumSearchResponse
-
     @GET(".")
     suspend fun getAlbumInfo(
         @Query("method") method: String = "album.getInfo",
@@ -59,4 +52,21 @@ interface LastFmService {
         @Query("mbid") mbid: String? = null,
         @Query("autocorrect") autocorrect: Int = 1
     ): AlbumInfoResponse
+
+    @GET(".")
+    suspend fun searchTracks(
+        @Query("method") method: String = "track.search",
+        @Query("track") query: String,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 30
+    ): TrackSearchResponse
+
+    @GET(".")
+    suspend fun getTrackInfo(
+        @Query("method") method: String = "track.getInfo",
+        @Query("artist") artist: String,
+        @Query("track") track: String,
+        @Query("mbid") mbid: String? = null,
+        @Query("autocorrect") autocorrect: Int = 1
+    ): TrackInfoResponse
 }

@@ -1,6 +1,7 @@
 package com.example.pitchapp.data.model
 
 import com.example.pitchapp.data.repository.MusicRepository.Companion.generateAlbumId
+import com.example.pitchapp.data.repository.MusicRepository.Companion.generateTrackId
 
 // --- Artist mapping ---
 fun ApiArtist.toDomainArtist(): Artist {
@@ -63,6 +64,16 @@ fun AlbumDetail.toDomainAlbum(): Album {
         playCount = playcount?.toIntOrNull() ?: 0,
         tracks = parseTracks(tracks),
         summary = wiki?.summary?.sanitizeWikiText() ?: "No description available"
+    )
+}
+fun TrackDetail.toDomainTrack(): Track {
+    return Track(
+        id = generateTrackId(artist, name),
+        name = name,
+        artist = artist,
+        lastFmUrl = url ?: "",
+        playcount = playcount?.toIntOrNull() ?: 0,
+
     )
 }
 

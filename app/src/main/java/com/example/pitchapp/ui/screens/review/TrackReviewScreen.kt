@@ -26,16 +26,20 @@ import com.example.pitchapp.viewmodel.TrackReviewViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.example.pitchapp.data.model.Result
+import com.example.pitchapp.viewmodel.AuthViewModel
+import com.example.pitchapp.ui.screens.search.TrackDetailScreen
 
 @Composable
 fun AddTrackReviewScreen(
     navController: NavController,
-    trackReviewViewModel: TrackReviewViewModel
+    trackReviewViewModel: TrackReviewViewModel,
+    authViewModel: AuthViewModel,
 ) {
     val selectedTrack by trackReviewViewModel.selectedTrack.collectAsState()
     val reviewText by trackReviewViewModel.reviewText.collectAsState()
     val rating by trackReviewViewModel.rating.collectAsState()
     val submissionResult by trackReviewViewModel.submissionResult.collectAsState()
+    val userId by authViewModel.userId.collectAsState()
 
     Scaffold { padding ->
         Column(
@@ -75,20 +79,19 @@ fun AddTrackReviewScreen(
 
             Button(
                 onClick = {
-                    val userId = Firebase.auth.currentUser?.uid ?: return@Button
-                    val username = Firebase.auth.currentUser?.displayName ?: "Anonymous"
-                    trackReviewViewModel.submitReview(userId, username) {
+                    trackReviewViewModel.submitReview{
                         val trackId = selectedTrack?.mbid
-                        Log.d("Track Id in Review","track id $trackId")
                         if (trackId != null) {
-                            navController.navigate(Screen.AlbumDetail.createRoute(trackId))
+                            navController.navigate(Screen.TrackDetail.createRoute(trackId))
+                            Log.d("Track ID","$trackId")
                             navController.navigate(Screen.Feed.route) {
                                 popUpTo(Screen.Feed.route) { inclusive = true }
                             }
+
+
                         }
+
                     }
-
-
                     },
                 enabled = reviewText.isNotBlank() && rating > 0f,
                 modifier = Modifier.align(Alignment.End)

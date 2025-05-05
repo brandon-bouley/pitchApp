@@ -72,7 +72,7 @@ private fun FeedListContent(
             key = { item ->
                 when (item) {
                     is FeedItem.SectionHeader -> "header_${item.title}"
-                    is FeedItem.ReviewItem -> "review_${item.review.id}"
+                    is FeedItem.ReviewItem -> "review_${item.review?.id}"
                     is FeedItem.AlbumItem -> "album_${item.album.id}"
                     is FeedItem.TrackItem -> "track_${item.track.mbid}"
                 }
@@ -93,7 +93,7 @@ private fun FeedListContent(
                 is FeedItem.ReviewItem ->
                     ReviewCard(
                         reviewItem = item,
-                        onClick = { navController.navigate("album/${item.review.albumId}") },
+                        onClick = { navController.navigate("album/${item.review?.albumId}") },
                     )
 
                 is FeedItem.AlbumItem ->
