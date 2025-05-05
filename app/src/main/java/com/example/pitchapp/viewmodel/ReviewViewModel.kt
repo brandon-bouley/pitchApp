@@ -187,7 +187,7 @@ class ReviewViewModel(
         val isFormValid: Boolean
             get() = selectedAlbum != null &&
                     rating >= 0.5f &&
-                    reviewText.length in 10..500
+                    reviewText.length in 3..500
     }
 
     private fun Float.roundToNearestHalf(): Float = (this * 2).roundToInt() / 2f

@@ -102,33 +102,31 @@ fun MainApp(
                 modifier = Modifier.padding(padding)
             ) {
                 composable(Screen.Feed.route) {
-                    val feedVm = viewModel<FeedViewModel>(factory = feedViewModelFactory)
-                    val reviewVm = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
 
                     FeedScreen(
                         navController = navController,
-                        viewModel = feedVm,
-                        reviewViewModel = reviewVm
+                        viewModel = viewModel(factory = feedViewModelFactory),
+                        reviewViewModel = viewModel(factory = reviewViewModelFactory)
                     )
                 }
+                navigation(
+                    startDestination = Screen.Search.route,
+                    route = "search_root"
+                ) {
+                    composable(Screen.Search.route) {
+                        SearchScreen(
+                            navController = navController,
+                            viewModel = viewModel(factory = searchViewModelFactory),
+                            reviewViewModel = viewModel(factory = reviewViewModelFactory)
+                        )
+                    }
 
-                composable(Screen.Search.route) {
-                    val searchVm = viewModel<SearchViewModel>(factory = searchViewModelFactory)
-                    val reviewVm = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
-
-                    SearchScreen(
-                        navController = navController,
-                        viewModel = searchVm,
-                        reviewViewModel = reviewVm
-                    )
-                }
-
-                composable(Screen.Results.route) {
-                    ResultScreen(
-                        navController = navController,
-                        viewModel = viewModel(factory = searchViewModelFactory)
-                    )
-                }
+                    composable(Screen.Results.route) {
+                        ResultScreen(
+                            navController = navController,
+                            viewModel = viewModel(factory = searchViewModelFactory)
+                        )
+                    }
 
                 composable("login") {
                     LoginScreen(navController = navController, authViewModel = authViewModel)
@@ -216,6 +214,14 @@ fun MainApp(
                         navController = navController,
                         trackReviewViewModel = trackReviewViewModel
                     )
+                }
+
+                composable("login") {
+                    LoginScreen(navController = navController, authViewModel = authViewModel)
+                }
+
+                composable("signup") {
+                    SignUpScreen(navController = navController, authViewModel = authViewModel)
                 }
             }
         }
