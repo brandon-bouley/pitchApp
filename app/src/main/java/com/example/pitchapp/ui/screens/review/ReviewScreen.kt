@@ -28,29 +28,44 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.ui.components.AlbumSearchField
 import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
+import com.example.pitchapp.data.model.Result
+import com.example.pitchapp.viewmodel.AuthViewModel
+
+
 //set selected track to null somewhere
 @Composable
 fun AddReviewScreen(
     navController: NavController,
     reviewViewModel: ReviewViewModel,
     searchViewModel: SearchViewModel,
+    authViewModel: AuthViewModel,
+    musicRepository: MusicRepository,
+    albumId: String?
 
 ) {
+    val uiState by reviewViewModel.uiState.collectAsState()
+    val userId by authViewModel.userId.collectAsState()
 
-
-    val uiState     by reviewViewModel.uiState.collectAsState()
-    val loadedAlbum by searchViewModel.selectedAlbum.collectAsState()
-
-    LaunchedEffect(loadedAlbum) {
-        loadedAlbum?.let { reviewViewModel.setSelectedAlbum(it) }
+    LaunchedEffect(albumId) {
+        albumId?.let { id ->
+            when(val result = musicRepository.getAlbumFromFirestore(id)) {
+                is Result.Success -> {
+                    reviewViewModel.setSelectedAlbum(result.data)
+                    searchViewModel.selectAlbum(result.data)
+                }
+                is Result.Error -> {
+                    reviewViewModel.updateErrorMessage("Album load failed: ${result.exception.message}")
+                }
+            }
+        }
     }
-
 
     Scaffold { padding ->
         Column(
@@ -58,15 +73,15 @@ fun AddReviewScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-                Text("Selected Album:", style = MaterialTheme.typography.titleMedium)
-                uiState.selectedAlbum?.let { album ->
-                    Text(
-                        text = "${album.title} by ${album.artist}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                } ?: Text("No album selected", style = MaterialTheme.typography.bodyMedium)
 
-                Spacer(Modifier.height(8.dp))
+            uiState.selectedAlbum?.let { album ->
+                Column {
+                    Text("Reviewing:", style = MaterialTheme.typography.titleMedium)
+                    Text(album.title, style = MaterialTheme.typography.bodyLarge)
+                    Text(album.artist, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(16.dp))
+                }
+            }
 
 
                 AlbumSearchField(
@@ -102,13 +117,13 @@ fun AddReviewScreen(
             Button(
                 onClick = {
                     reviewViewModel.submitReview {
-                        val albumId = uiState.selectedAlbum?.id
-                        if (albumId != null) {
-                            navController.navigate(Screen.AlbumDetail.createRoute(albumId))
+                        val currID = uiState.selectedAlbum?.id
+                        if (currID != null) {
+                            navController.navigate(Screen.AlbumDetail.createRoute(currID))
                         }
                     }
                 },
-                enabled = uiState.isFormValid && !uiState.isSubmitting,
+                enabled = uiState.isFormValid && !uiState.isSubmitting && userId != null,
                 modifier = Modifier.align(Alignment.End)
             ) {
                 if (uiState.isSubmitting) {
@@ -126,6 +141,7 @@ fun AddReviewScreen(
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
+
         }
     }
 }

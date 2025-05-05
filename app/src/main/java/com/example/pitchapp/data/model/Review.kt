@@ -5,25 +5,22 @@ import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.Exclude
 
 data class Review(
-    @DocumentId val id: String = "", // Firestore document ID
-    val albumId: String,             // Reference to album's generated SHA-256 ID
-    val userId: String,              // Firebase Auth UID
-    val username: String,            // Display name (duplicated for queries)
+    @DocumentId val id: String = "",
+    val albumId: String,
+    val userId: String,
+    val username: String,
     val content: String,
     val rating: Float,
     val timestamp: Timestamp = Timestamp.now(),
+    val likes: List<String> = emptyList(), //  user IDs who liked this review
+    val likeCount: Int = 0, // Derived field for querying/sorting
 
-    @Exclude                         // Mark as excluded from Firestore serialization
-    val albumDetails: Album? = null  // Not stored in Firestore
+    @Exclude
+    val albumDetails: Album? = null
 ) {
-    // Validation for rating values
     init {
-        require(rating in 0.5f..5.0f) {
-            "Rating must be between 0.5 and 5.0"
-        }
-        require(rating % 0.5f == 0f) {
-            "Rating must be in half-star increments"
-        }
+        require(rating in 0.5f..5.0f) { "Rating must be between 0.5 and 5.0" }
+        require(rating % 0.5f == 0f) { "Rating must be in half-star increments" }
     }
 
     // Firestore serialization helper
@@ -33,6 +30,8 @@ data class Review(
         "username" to username,
         "content" to content,
         "rating" to rating,
-        "timestamp" to timestamp
+        "timestamp" to timestamp,
+        "likes" to likes,
+        "likeCount" to likes.size
     )
 }

@@ -27,9 +27,15 @@ import com.example.pitchapp.data.model.FeedItem
 import kotlin.math.floor
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-
+import com.example.pitchapp.data.model.Review
+import com.example.pitchapp.ui.screens.review.StarRating
 
 @Composable
 fun ReviewCard(

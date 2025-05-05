@@ -5,6 +5,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Artist
 import com.example.pitchapp.data.model.Review
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.example.pitchapp.data.model.Result
+import com.example.pitchapp.ui.navigation.Screen
 
 class SearchViewModel(
     private val musicRepository: MusicRepository,
@@ -37,13 +39,11 @@ class SearchViewModel(
     private val _artistAlbums = MutableStateFlow<List<Album>>(emptyList())
     val artistAlbums: StateFlow<List<Album>> = _artistAlbums.asStateFlow()
 
-    private val _navigationAlbumId = mutableStateOf<String?>(null)
-    val navigationAlbumId: State<String?> get() = _navigationAlbumId
-
     private val _isAlbumSelected = MutableStateFlow(false)
     val isAlbumSelected: StateFlow<Boolean> = _isAlbumSelected.asStateFlow()
 
     private var searchJob: Job? = null
+
     fun updateSearchQuery(query: String) {
         val wordLimit = 5
         val wordCount = query.trim().split("\\s+".toRegex()).size
@@ -119,7 +119,34 @@ class SearchViewModel(
 
     fun selectArtist(artist: Artist) {
         _selectedArtist.value = artist
+        _searchState.update {
+            it.copy(
+                searchQuery = "",  // Clear search query
+                results = emptyList()  // Clear previous results
+            )
+        }
         getArtistTopAlbums(artist.name)
+    }
+
+    fun onAlbumClicked(
+        navController: NavController,
+        album: Album
+    ) {
+        viewModelScope.launch {
+            when (val result = musicRepository.getOrFetchAlbum(album.artist, album.title)) {
+                is Result.Success -> {
+                    navController.navigate(Screen.AlbumDetail.createRoute(result.data.id))
+                }
+                is Result.Error -> {
+                    _searchState.update { it.copy(error = result.exception.message) }
+                }
+                else -> {
+                    _searchState.update {
+                        it.copy(error = "Unexpected result when caching album")
+                    }
+                }
+            }
+        }
     }
 
     fun selectAlbum(album: Album) {
@@ -140,29 +167,6 @@ class SearchViewModel(
                 else -> Result.Error(IllegalStateException("Unexpected result type"))
             }
         }
-    }
-
-    fun handleAlbumSelection(artist: String, title: String) {
-        viewModelScope.launch {
-            _searchState.update { it.copy(isLoading = true, error = null) }
-
-            when (val result = musicRepository.getOrFetchAlbum(artist, title)) {
-                is Result.Success -> {
-                    _navigationAlbumId.value = result.data.id
-                }
-                is Result.Error -> {
-                    _searchState.update {
-                        it.copy(error = "Album load failed: ${result.exception.message}")
-                    }
-                }
-                else -> Result.Error(IllegalStateException("Unexpected result type"))
-            }
-            _searchState.update { it.copy(isLoading = false) }
-        }
-    }
-
-    fun clearNavigation() {
-        _navigationAlbumId.value = null
     }
 
 
@@ -221,6 +225,7 @@ class SearchViewModel(
                     _artistAlbums.value = result.data
                     _searchState.update {
                         it.copy(
+                            results = result.data,
                             isLoading = false,
                             searchType = SearchType.ALBUM
                         )
@@ -263,3 +268,4 @@ class SearchViewModel(
     }
 
 }
+

@@ -28,36 +28,44 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavController
+import com.example.pitchapp.data.model.FeedItem
+import com.example.pitchapp.ui.components.ReviewCard
+import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
+import com.example.pitchapp.viewmodel.ReviewViewModel
 import java.util.Locale
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlbumDetailScreen(
     albumId: String,
     viewModel: AlbumDetailViewModel,
+    reviewViewModel: ReviewViewModel,
     navController: NavController
 ) {
     val album = viewModel.albumDetails.value
     val isLoading = viewModel.isLoading.value
     val error = viewModel.error.value
+    val reviews by reviewViewModel.reviews.collectAsState()
 
-    // Fetch album details if not already loaded
     LaunchedEffect(albumId) {
         if (album == null || album.id != albumId) {
             viewModel.loadAlbumDetails(albumId)
         }
+        reviewViewModel.loadReviews(albumId)
     }
 
     Scaffold(
@@ -65,10 +73,28 @@ fun AlbumDetailScreen(
             TopAppBar(
                 title = { Text("Album Details") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = {
+                        navController.navigate(Screen.Search.route) {
+                            popUpTo("search_root") {
+                                inclusive = true
+                            }
+                        }
+                        viewModel.clearState()
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 }
+            )
+        },
+                floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    navController.navigate(Screen.AddReview.createRoute(albumId)) {
+                        launchSingleTop = true
+                    }
+                },
+                icon = { Icon(Icons.Default.Add, "Add Review") },
+                text = { Text("Add Review") }
             )
         }
     ) { padding ->
@@ -78,37 +104,45 @@ fun AlbumDetailScreen(
                 .padding(padding)
         ) {
             when {
-                isLoading -> {
-                    SpinningRecord()
-                }
+                isLoading -> SpinningRecord()
+                error != null -> Text("Error: $error", color = MaterialTheme.colorScheme.error)
+                else -> LazyColumn(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Safe access to album
+                    album?.let { nonNullAlbum ->
+                        item { AlbumHeader(album = nonNullAlbum) }
 
-                error != null -> {
-                    Text("Error loading album: $error", color = MaterialTheme.colorScheme.error)
-                }
-
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        item {
-                            AlbumHeader(album = album!!)
+                        if (nonNullAlbum.tracks.isNotEmpty()) {
+                            item { Text("Track List", style = MaterialTheme.typography.titleLarge) }
+                            items(nonNullAlbum.tracks) { track ->
+                                TrackItem(track)
+                            }
                         }
 
-                        if (album != null) {
-                            if (album.tracks.isNotEmpty()) {
-                                item {
-                                    Text(
-                                        text = "Track List",
-                                        style = MaterialTheme.typography.titleLarge
+                        item { Text("Reviews", style = MaterialTheme.typography.titleLarge) }
+                        items(reviews) { review ->
+                            // Ensure review.albumDetails is not null
+                            ReviewCard(
+                                reviewItem = FeedItem.ReviewItem(
+                                    review,
+                                    review.albumDetails ?: nonNullAlbum // Fallback to current album
+                                ),
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.Profile.createRoute(review.username)
                                     )
-                                }
-                                items(album.tracks) { track ->
-                                    TrackItem(track)
-                                }
-                            }
+                                },
+                            )
+                        }
+                    } ?: run {
+                        item {
+                            Text(
+                                "Album information unavailable",
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
@@ -117,46 +151,46 @@ fun AlbumDetailScreen(
     }
 }
 
-    @Composable
-    fun AlbumHeader(album: Album) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+@Composable
+fun AlbumHeader(album: Album) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Album artwork
+        AsyncImage(
+            model = album.artworkUrl,
+            contentDescription = "Album cover",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .size(300.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+
+        Text(
+            text = album.title,
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Text(
+            text = album.artist,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        // Stats
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Album artwork
-            AsyncImage(
-                model = album.artworkUrl,
-                contentDescription = "Album cover",
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .size(300.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-
-            Text(
-                text = album.title,
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            Text(
-                text = album.artist,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            // Stats
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                StatItem("Listeners", album.listeners.toString())
-                StatItem("Plays", album.playCount.toString())
-            }
+            StatItem("Summary", album.summary.toString())
+            StatItem("Plays", album.playCount.toString())
         }
     }
+}
 
 fun formatDuration(seconds: Int): String {
     val minutes = seconds / 60
@@ -181,14 +215,9 @@ private fun StatItem(label: String, value: String) {
 @Composable
 private fun TrackItem(track: Album.Track) {
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ){
+            .padding(vertical = 4.dp)) {
         Row(
             modifier = Modifier
                 .padding(12.dp)

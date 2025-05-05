@@ -1,5 +1,6 @@
 package com.example.pitchapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,8 @@ class AuthViewModel : ViewModel() {
             val storedPassword = userDoc.getString("password") ?: ""
             if (storedPassword == password) {
                 _userId.value = userDoc.id
+                Log.d("AuthViewModel", "Login successful for user: $username")
+                Log.d("AuthViewModel", "User ID: ${_userId.value}")
                 onSuccess()
             } else {
                 onFailure("Incorrect password")

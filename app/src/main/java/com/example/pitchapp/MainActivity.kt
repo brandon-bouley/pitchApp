@@ -1,7 +1,4 @@
 package com.example.pitchapp
-import ShakeDetector
-import android.hardware.Sensor
-import android.hardware.SensorManager
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -29,8 +26,9 @@ import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ProfileRepository
 import com.example.pitchapp.data.repository.ReviewRepository
 import com.example.pitchapp.data.repository.TrackReviewRepository
-
+import android.hardware.SensorManager
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
+import com.example.pitchapp.viewmodel.AuthViewModel
 import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ProfileViewModel
 import com.example.pitchapp.viewmodel.ReviewViewModel
@@ -38,12 +36,17 @@ import com.example.pitchapp.viewmodel.SearchViewModel
 import com.example.pitchapp.viewmodel.TrackReviewViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import com.google.firebase.initialize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlin.random.Random
+import com.example.pitchapp.ui.components.ShakeDetector
+
+
 
 
 class ProfileViewModelFactory(
@@ -90,15 +93,14 @@ class FeedViewModelFactory(
 
 // ReviewViewModelFactory
 class ReviewViewModelFactory(
-    private val repository: ReviewRepository
+    private val reviewRepository: ReviewRepository,
+    private val authViewModel: AuthViewModel
 ) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(
-        modelClass: Class<T>,
-    ): T {
-        return ReviewViewModel(
-            reviewRepository = repository,
-        ) as T
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ReviewViewModel::class.java)) {
+            return ReviewViewModel(reviewRepository, authViewModel) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 
@@ -135,9 +137,6 @@ class AlbumDetailViewModelFactory(
     }
 }
 
-
-
-
 class MainActivity : ComponentActivity() {
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
@@ -148,33 +147,23 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Initialize Firebase
-        try {
-            FirebaseApp.getInstance()
-        } catch (e: IllegalStateException) {
-            FirebaseApp.initializeApp(this)
-        }
-
         // Dependency setup
         val api = LastFmApi.service
         val musicRepository = MusicRepository(api)
 
         // Repository initialization
         val reviewRepository = ReviewRepository()
-
         val feedRepository = FeedRepository(
             reviewRepository = reviewRepository,
             musicRepository = musicRepository,
         )
-
         val profileRepository = ProfileRepository()
         val trackReviewRepository = TrackReviewRepository()
         val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository)
 
         // ViewModel factories
+
         val feedViewModelFactory = FeedViewModelFactory(feedRepository)
-        val reviewViewModelFactory = ReviewViewModelFactory(reviewRepository)
         val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
         val profileViewModelFactory = ProfileViewModelFactory(profileRepository)
 
@@ -260,34 +249,15 @@ class MainActivity : ComponentActivity() {
                     musicRepository = musicRepository,
                     reviewRepository = reviewRepository,
                     feedViewModelFactory = feedViewModelFactory,
-                    reviewViewModelFactory = reviewViewModelFactory,
                     searchViewModelFactory = searchViewModelFactory,
                     profileViewModelFactory = profileViewModelFactory,
-                    trackReviewViewModelFactory= trackViewModelFactory,
+                    trackReviewViewModelFactory = trackViewModelFactory,
                     selectedTrack = selectedTrack,
                     shouldReviewTrack = shouldReviewTrack,
-                    onReviewComplete = {
-                        selectedTrack = null
-                        shouldReviewTrack = false
-                    }
-
-
-                    )
+                    onReviewComplete = { shouldReviewTrack = false }
+                )
             }
         }
-    }
-    override fun onResume() {
-        super.onResume()
-        sensorManager.registerListener(
-            shakeDetector,
-            sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-            SensorManager.SENSOR_DELAY_UI
-        )
-    }
-
-    override fun onPause() {
-        super.onPause()
-        sensorManager.unregisterListener(shakeDetector)
     }
 }
 
@@ -296,7 +266,6 @@ private fun FirebaseAuthHandler(
     musicRepository: MusicRepository,
     reviewRepository: ReviewRepository,
     feedViewModelFactory: FeedViewModelFactory,
-    reviewViewModelFactory: ReviewViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
     trackReviewViewModelFactory: RandomTrackViewModelFactory,
@@ -306,20 +275,27 @@ private fun FirebaseAuthHandler(
 
 
 ) {
+    val authViewModel: AuthViewModel = viewModel()
 
+    val reviewViewModelFactory = ReviewViewModelFactory(
+        reviewRepository = reviewRepository,
+        authViewModel = authViewModel
+    )
 
     MainApp(
         feedViewModelFactory = feedViewModelFactory,
-        reviewViewModelFactory = reviewViewModelFactory,
         searchViewModelFactory = searchViewModelFactory,
         profileViewModelFactory = profileViewModelFactory,
+        reviewViewModelFactory = reviewViewModelFactory,
         trackReviewViewModelFactory = trackReviewViewModelFactory,
         selectedTrack = selectedTrack,
         shouldReviewTrack = shouldReviewTrack,
-        onReviewComplete = onReviewComplete
-
+        onReviewComplete = onReviewComplete,
+        authViewModel = authViewModel,
+        musicRepository = musicRepository,
+        reviewRepository = reviewRepository
     )
-    }
+}
 
 
 @Composable

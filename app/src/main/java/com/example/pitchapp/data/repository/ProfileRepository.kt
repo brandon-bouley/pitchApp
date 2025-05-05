@@ -12,13 +12,14 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
 class ProfileRepository {
-    private val db: FirebaseFirestore = Firebase.firestore("newPitchDB")
+    private val db = FirebaseFirestore.getInstance()
 
     suspend fun getProfile(userId: String): Profile {
-        val profileDoc = db.collection("profiles").document(userId).get().await()
-        return profileDoc.toObject(Profile::class.java)?.apply {
-            reviews = getReviews(userId)
-        } ?: throw Exception("Profile not found")
+        val snapshot = db.collection("users").document(userId).get().await()
+        if (!snapshot.exists()) {
+            throw Exception("User profile not found.")
+        }
+        return snapshot.toObject(Profile::class.java) ?: throw Exception("Failed to parse user profile.")
     }
 
     private suspend fun getReviews(userId: String): List<Review> {

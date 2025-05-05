@@ -19,7 +19,6 @@ class AlbumDetailViewModel(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // Get album ID from navigation arguments
     private val albumId: String? = savedStateHandle.get<String>("albumId")
 
     private val _albumDetails = mutableStateOf<Album?>(null)
@@ -36,7 +35,7 @@ class AlbumDetailViewModel(
 
     init {
         if (albumId == null) {
-            _error.value = "Invalid album ID"
+            _error.value = "On init: Invalid album ID"
         } else {
             loadAlbumDetails(albumId)
         }
@@ -44,6 +43,12 @@ class AlbumDetailViewModel(
 
     fun refresh() {
         albumId?.let { loadAlbumDetails(it) }
+    }
+
+    fun clearState() {
+        _albumDetails.value = null
+        _reviews.value = emptyList()
+        _error.value = null
     }
 
     fun loadAlbumDetails(albumId: String) {
@@ -65,7 +70,7 @@ class AlbumDetailViewModel(
         }
     }
 
-    private fun loadReviews(albumId: String) {
+    fun loadReviews(albumId: String) {
         viewModelScope.launch {
             try {
                 when (val reviewsResult = reviewRepository.getReviewsForAlbum(albumId)) {
