@@ -6,11 +6,11 @@ import com.google.firebase.firestore.Exclude
 
 data class Review(
     @DocumentId val id: String = "",
-    val albumId: String,
-    val userId: String,
-    val username: String,
-    val content: String,
-    val rating: Float,
+    val albumId: String = "",
+    val userId: String = "",
+    val username: String = "",
+    val content: String = "",
+    val rating: Float = 0f,
     val timestamp: Timestamp = Timestamp.now(),
     val likes: List<String> = emptyList(), //  user IDs who liked this review
     val likeCount: Int = 0, // Derived field for querying/sorting
