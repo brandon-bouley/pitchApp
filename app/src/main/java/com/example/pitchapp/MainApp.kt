@@ -117,6 +117,38 @@ fun MainApp(
                         reviewViewModel = viewModel(factory = reviewViewModelFactory)
                     )
                 }
+
+                composable(
+                    route = Screen.AlbumDetail.route,
+                    arguments = listOf(
+                        navArgument(Screen.AlbumDetail.ARG_ALBUM_ID) {
+                            type = NavType.StringType
+                        }
+                    )
+                ) { backStackEntry ->
+                    val albumId =
+                        backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
+                            ?: return@composable
+
+                    val albumDetailViewModel = viewModel<AlbumDetailViewModel>(
+                        factory = AlbumDetailViewModelFactory(
+                            musicRepository = musicRepository,
+                            reviewRepository = reviewRepository
+                        )
+                    )
+
+                    val reviewViewModel =
+                        viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
+
+                    AlbumDetailScreen(
+                        albumId = albumId,
+                        viewModel = albumDetailViewModel,
+                        reviewViewModel = reviewViewModel,
+                        navController = navController
+                    )
+                }
+
+
                 navigation(
                     startDestination = Screen.Search.route,
                     route = "search_root"
@@ -133,44 +165,6 @@ fun MainApp(
                         ResultScreen(
                             navController = navController,
                             viewModel = viewModel(factory = searchViewModelFactory)
-                        )
-                    }
-
-                    composable("login") {
-                        LoginScreen(navController = navController, authViewModel = authViewModel)
-                    }
-
-                    composable("signup") {
-                        SignUpScreen(navController = navController, authViewModel = authViewModel)
-                    }
-
-                    composable(
-                        route = Screen.AlbumDetail.route,
-                        arguments = listOf(
-                            navArgument(Screen.AlbumDetail.ARG_ALBUM_ID) {
-                                type = NavType.StringType
-                            }
-                        )
-                    ) { backStackEntry ->
-                        val albumId =
-                            backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
-                                ?: return@composable
-
-                        val albumDetailViewModel = viewModel<AlbumDetailViewModel>(
-                            factory = AlbumDetailViewModelFactory(
-                                musicRepository = musicRepository,
-                                reviewRepository = reviewRepository
-                            )
-                        )
-
-                        val reviewViewModel =
-                            viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
-
-                        AlbumDetailScreen(
-                            albumId = albumId,
-                            viewModel = albumDetailViewModel,
-                            reviewViewModel = reviewViewModel,
-                            navController = navController
                         )
                     }
 
@@ -194,7 +188,9 @@ fun MainApp(
                         )
                     }
 
-                    composable(
+                }
+
+                composable(
                         route = Screen.Profile.route,
                         arguments = listOf(
                             navArgument(Screen.Profile.ARG_USERNAME) {
@@ -248,7 +244,7 @@ fun MainApp(
                     composable("signup") {
                         SignUpScreen(navController = navController, authViewModel = authViewModel)
                     }
-                }
+
             }
         }
 

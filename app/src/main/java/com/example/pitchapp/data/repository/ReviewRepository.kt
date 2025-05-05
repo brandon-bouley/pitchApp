@@ -1,5 +1,6 @@
 package com.example.pitchapp.data.repository
 
+import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Review
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.Query
@@ -17,7 +18,6 @@ class ReviewRepository {
 
     suspend fun insertReview(review: Review): Result<Unit> {
         return try {
-            // Convert to Firestore-friendly format
             val document = reviewsRef.document()
             val data = review.copy(id = document.id).toFirestoreMap()
 
@@ -128,7 +128,8 @@ class ReviewRepository {
                 content = getString("content") ?: "",
                 rating = getDouble("rating")?.toFloat() ?: 0f,
                 timestamp = getTimestamp("timestamp") ?: Timestamp.now(),
-                likes = get("likes") as? List<String> ?: emptyList()
+                likes = get("likes") as? List<String> ?: emptyList(),
+                albumDetails = get("albumDetails") as? Album
             )
         } catch (e: Exception) {
             null
