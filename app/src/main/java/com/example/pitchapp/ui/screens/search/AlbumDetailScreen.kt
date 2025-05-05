@@ -73,15 +73,8 @@ fun AlbumDetailScreen(
             TopAppBar(
                 title = { Text("Album Details") },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        navController.navigate(Screen.Search.route) {
-                            popUpTo("search_root") {
-                                inclusive = true
-                            }
-                        }
-                        viewModel.clearState()
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )

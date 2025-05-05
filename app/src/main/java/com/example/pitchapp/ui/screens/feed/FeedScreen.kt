@@ -26,6 +26,7 @@ import com.example.pitchapp.data.model.FeedItem
 import com.example.pitchapp.ui.components.AlbumCard
 import com.example.pitchapp.ui.components.RandomTrackCard
 import com.example.pitchapp.ui.components.ReviewCard
+import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ReviewViewModel
@@ -35,7 +36,9 @@ import com.example.pitchapp.viewmodel.ReviewViewModel
 fun FeedScreen(navController: NavController, viewModel: FeedViewModel = viewModel(), reviewViewModel: ReviewViewModel) {
     val feedState by viewModel.feedState.collectAsState()
 
-
+    LaunchedEffect(Unit) {
+        viewModel.loadFeed()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = feedState) {
@@ -91,14 +94,14 @@ private fun FeedListContent(
                 is FeedItem.ReviewItem ->
                     ReviewCard(
                         reviewItem = item,
-                        onClick = { navController.navigate("album/${item.review.albumId}") },
+                        onClick = { navController.navigate(Screen.AlbumDetail.createRoute(item.review.albumId)) },
                     )
 
                 is FeedItem.AlbumItem ->
                     AlbumCard(
                         albumItem = item,
                         onClick = {
-                            navController.navigate("album/${item.album.id}")
+                            navController.navigate(Screen.AlbumDetail.createRoute(item.album.id))
                         }
                     )
                 is FeedItem.TrackItem ->

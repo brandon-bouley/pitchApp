@@ -37,6 +37,8 @@ sealed class Screen(val route: String) {
     object Feed : Screen("feed")
     object Search : Screen("search")
     object Results : Screen("results")
+    object Login : Screen("login")
+    object SignUp : Screen("signup")
 
     object AddReview : Screen("add_review/{albumId}") {
         const val ARG_ALBUM_ID = "albumId"

@@ -55,7 +55,11 @@ import com.example.pitchapp.ui.screens.profile.LoginScreen
 import com.example.pitchapp.ui.screens.profile.SignUpScreen
 import com.example.pitchapp.ui.screens.review.AddTrackReviewScreen
 import com.example.pitchapp.viewmodel.AuthViewModel
+import androidx.compose.runtime.collectAsState
 import com.example.pitchapp.viewmodel.TrackReviewViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 
 
 
@@ -75,8 +79,12 @@ fun MainApp(
 ) {
     val navController = rememberNavController()
     val trackReviewViewModel: TrackReviewViewModel = viewModel(factory = trackReviewViewModelFactory)
-    val systemDarkTheme = isSystemInDarkTheme()
-    var darkTheme by remember { mutableStateOf(systemDarkTheme) }
+
+
+    val userTheme = authViewModel.themePreference.collectAsState().value
+    var darkThemeOverride by remember { mutableStateOf<Boolean?>(null) }
+    val darkTheme = darkThemeOverride ?: (userTheme == "dark")
+
 
     LaunchedEffect(shouldReviewTrack, selectedTrack) {
         if (shouldReviewTrack && selectedTrack != null) {
@@ -92,7 +100,7 @@ fun MainApp(
             topBar = {
                 LogoHeader(
                     darkTheme = darkTheme,
-                    onToggle = { darkTheme = it }
+                    onToggle = { darkThemeOverride = it }
                 )
             }
         ) { padding ->
@@ -102,15 +110,44 @@ fun MainApp(
                 modifier = Modifier.padding(padding)
             ) {
                 composable(Screen.Feed.route) {
-                    val feedVm = viewModel<FeedViewModel>(factory = feedViewModelFactory)
-                    val reviewVm = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
 
                     FeedScreen(
                         navController = navController,
-                        viewModel = feedVm,
-                        reviewViewModel = reviewVm
+                        viewModel = viewModel(factory = feedViewModelFactory),
+                        reviewViewModel = viewModel(factory = reviewViewModelFactory)
                     )
                 }
+
+                composable(
+                    route = Screen.AlbumDetail.route,
+                    arguments = listOf(
+                        navArgument(Screen.AlbumDetail.ARG_ALBUM_ID) {
+                            type = NavType.StringType
+                        }
+                    )
+                ) { backStackEntry ->
+                    val albumId =
+                        backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
+                            ?: return@composable
+
+                    val albumDetailViewModel = viewModel<AlbumDetailViewModel>(
+                        factory = AlbumDetailViewModelFactory(
+                            musicRepository = musicRepository,
+                            reviewRepository = reviewRepository
+                        )
+                    )
+
+                    val reviewViewModel =
+                        viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
+
+                    AlbumDetailScreen(
+                        albumId = albumId,
+                        viewModel = albumDetailViewModel,
+                        reviewViewModel = reviewViewModel,
+                        navController = navController
+                    )
+                }
+
 
                 navigation(
                     startDestination = Screen.Search.route,
@@ -132,84 +169,72 @@ fun MainApp(
                     }
 
                     composable(
-                        route = Screen.AlbumDetail.route,
-                        arguments = listOf(navArgument(Screen.AlbumDetail.ARG_ALBUM_ID) {
+                        route = Screen.AddReview.route,
+                        arguments = listOf(navArgument(Screen.AddReview.ARG_ALBUM_ID) {
                             type = NavType.StringType
                         })
                     ) { backStackEntry ->
                         val albumId =
-                            backStackEntry.arguments?.getString(Screen.AlbumDetail.ARG_ALBUM_ID)
-                        AlbumDetailScreen(
-                            albumId = albumId ?: "",
-                            viewModel = viewModel(
-                                factory = AlbumDetailViewModelFactory(
-                                    MusicRepository(LastFmApi.service),
-                                    ReviewRepository()
-                                )
-                            ),
-                            reviewViewModel = viewModel(factory = reviewViewModelFactory),
-                            navController = navController
-                        )
-                    }
+                            backStackEntry.arguments?.getString(Screen.AddReview.ARG_ALBUM_ID)
+                                ?: return@composable
 
-                    composable(
-                        route = Screen.AddReview.route,
-                        arguments = listOf(navArgument(Screen.AddReview.ARG_ALBUM_ID) { type = NavType.StringType })
-                    ) { backStackEntry ->
-                        val albumId = backStackEntry.arguments?.getString(Screen.AddReview.ARG_ALBUM_ID)
                         AddReviewScreen(
                             albumId = albumId,
                             navController = navController,
                             reviewViewModel = viewModel(factory = reviewViewModelFactory),
                             searchViewModel = viewModel(factory = searchViewModelFactory),
                             authViewModel = authViewModel,
-                            musicRepository = MusicRepository(LastFmApi.service)
+                            musicRepository = musicRepository
                         )
                     }
-                }
 
-
-                composable("login") {
-                    LoginScreen(navController = navController, authViewModel = authViewModel)
-                }
-
-                composable("signup") {
-                    SignUpScreen(navController = navController, authViewModel = authViewModel)
                 }
 
                 composable(
-                    route = Screen.Profile.route,
-                    arguments = listOf(
-                        navArgument(Screen.Profile.ARG_USERNAME) {
-                            type = NavType.StringType
-                            defaultValue = Firebase.auth.currentUser?.uid ?: ""
-                            nullable = true
-                        }
-                    )
-                ) { backStack ->
-                    val userId = backStack.arguments?.getString(Screen.Profile.ARG_USERNAME)
-                        ?: Firebase.auth.currentUser?.uid ?: ""
+                        route = Screen.Profile.route,
+                        arguments = listOf(
+                            navArgument(Screen.Profile.ARG_USERNAME) {
+                                type = NavType.StringType
+                                defaultValue = Firebase.auth.currentUser?.uid ?: ""
+                                nullable = true
+                            }
+                        )
+                    ) { backStack ->
+                        val userId = backStack.arguments?.getString(Screen.Profile.ARG_USERNAME)
+                            ?: Firebase.auth.currentUser?.uid ?: ""
 
-                    val profileVm = viewModel<ProfileViewModel>(
-                        factory = profileViewModelFactory,
-                        key = userId
-                    )
+                        val profileVm = viewModel<ProfileViewModel>(
+                            factory = profileViewModelFactory,
+                            key = userId
+                        )
 
-                    ProfileScreen(
-                        navController = navController,
-                        viewModel = profileVm,
-                        profileUserId = userId,
-                        authViewModel = authViewModel
-                    )
-                }
+                        ProfileScreen(
+                            navController = navController,
+                            viewModel = profileVm,
+                            profileUserId = userId,
+                            authViewModel = authViewModel,
+                            onThemeChanged = { darkThemeOverride = null }
+                        )
+                    }
 
-                composable("add_track_review") {
-                    AddTrackReviewScreen(
-                        navController = navController,
-                        trackReviewViewModel = trackReviewViewModel
-                    )
-                }
+                    composable("add_track_review") {
+                        AddTrackReviewScreen(
+                            navController = navController,
+                            trackReviewViewModel = trackReviewViewModel
+                        )
+                    }
+
+                    composable("login") {
+                        LoginScreen(navController = navController, authViewModel = authViewModel)
+                    }
+
+                    composable("signup") {
+                        SignUpScreen(navController = navController, authViewModel = authViewModel)
+                    }
+
             }
         }
+
     }
 }
+

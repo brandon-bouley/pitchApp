@@ -34,7 +34,7 @@ class MusicRepository @Inject constructor(
         }
     }
 
-    private val db = Firebase.firestore
+    private val db = Firebase.firestore("newPitchDB")
     private val albumsRef = db.collection("albums")
 
    suspend fun getTopTracks(limit: Int = 11): List<RandomTrack> {

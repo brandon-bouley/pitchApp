@@ -8,7 +8,6 @@ data class Profile(
     @DocumentId val userId: String = "",
     val displayName: String = "",
     val email: String? = null,
-    val photoUrl: String? = null,
     val bio: String? = null,
     val followers: List<String> = emptyList(),
     val following: List<String> = emptyList(),
@@ -16,7 +15,6 @@ data class Profile(
     val reviewCount: Int = 0,
     val averageRating: Float = 0f,
     val createdAt: Timestamp = Timestamp.now(),
-    val lastUpdated: Timestamp = Timestamp.now()
 ) {
     @Exclude var reviews: List<Review> = emptyList()  // Not stored in Firestore
 
