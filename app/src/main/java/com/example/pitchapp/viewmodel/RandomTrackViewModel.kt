@@ -9,9 +9,11 @@ import com.example.pitchapp.data.repository.TrackReviewRepository
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class TrackReviewViewModel(
     private val repository: TrackReviewRepository
@@ -59,21 +61,18 @@ class TrackReviewViewModel(
             )
             return
         }
-
-        val review = Review(
-            id = "",
-            albumId = track.mbid ?: "${track.artist.name}-${track.name}",
-            userId = userId,
-            username = username.ifBlank { "Anonymous" },
-            content = text,
-            rating = stars,
-            timestamp = Timestamp.now()
-        )
-
         viewModelScope.launch {
-//            _submissionResult.value = null // Optional: clear previous result
-
             try {
+
+                val review = Review(
+                    id = "",
+                    albumId = track.mbid ?: "${track.artist.name}-${track.name}",
+                    userId = userId,
+                    username = username.ifBlank { "Anonymous" },
+                    content = text,
+                    rating = stars,
+                    timestamp = Timestamp.now()
+                )
                 val result = repository.insertTrackReview(review)
                 _submissionResult.value = result
 
@@ -82,10 +81,16 @@ class TrackReviewViewModel(
                     _rating.value = 0f
                     onComplete()
                 }
-            } catch (e: Exception) {
+
+
+            }catch (e: Exception){
                 _submissionResult.value = Result.Error(e)
             }
         }
+
+
+
+
     }
 
 

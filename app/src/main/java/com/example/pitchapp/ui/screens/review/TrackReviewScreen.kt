@@ -1,5 +1,6 @@
 package com.example.pitchapp.ui.screens.review
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -78,6 +79,7 @@ fun AddTrackReviewScreen(
                     val username = Firebase.auth.currentUser?.displayName ?: "Anonymous"
                     trackReviewViewModel.submitReview(userId, username) {
                         val trackId = selectedTrack?.mbid
+                        Log.d("Track Id in Review","track id $trackId")
                         if (trackId != null) {
                             navController.navigate(Screen.AlbumDetail.createRoute(trackId))
                             navController.navigate(Screen.Feed.route) {
@@ -86,25 +88,28 @@ fun AddTrackReviewScreen(
                         }
                     }
 
+
                     },
                 enabled = reviewText.isNotBlank() && rating > 0f,
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text("Submit Review")
-            }
-
-            submissionResult?.let {
-                when (it) {
-                    is Result.Error -> Text(
-                        it.exception.message ?: "Unknown error",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    else -> {
-                        trackReviewViewModel.clearReviewState()
+                submissionResult?.let {
+                    when (it) {
+                        is Result.Error -> Text(
+                            it.exception.message ?: "Unknown error",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                        else -> {
+                            trackReviewViewModel.clearReviewState()
+                        }
                     }
                 }
+
             }
+
+
         }
     }
 }

@@ -14,7 +14,7 @@ interface LastFmService {
     @GET(".")
     suspend fun getTopTracks(
         @Query("method") method: String = "chart.gettoptracks",
-        @Query("limit") limit: Int = 11
+        @Query("limit") limit: Int = 17
     ): TopTracksResponse
     //got rid of Call
 

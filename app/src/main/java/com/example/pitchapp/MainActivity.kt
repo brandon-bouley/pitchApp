@@ -15,10 +15,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.remote.LastFmApi
 import com.example.pitchapp.data.repository.FeedRepository
@@ -44,7 +40,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlin.random.Random
+import android.hardware.Sensor
 import com.example.pitchapp.ui.components.ShakeDetector
+
 
 
 
@@ -141,11 +139,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
     private lateinit var musicRepository: MusicRepository
-    val trackReviewRepository = TrackReviewRepository()
-    val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository)
     private lateinit var onShake: () -> Unit
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d("ON CREATE","hi")
         super.onCreate(savedInstanceState)
         // Dependency setup
         val api = LastFmApi.service
@@ -166,15 +163,18 @@ class MainActivity : ComponentActivity() {
         val feedViewModelFactory = FeedViewModelFactory(feedRepository)
         val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
         val profileViewModelFactory = ProfileViewModelFactory(profileRepository)
-
         onShake = {}
         shakeDetector = ShakeDetector { onShake() }
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+
+
+
 
         setContent {
             var showDialog by remember { mutableStateOf(false) }
             var selectedTrack by remember { mutableStateOf<RandomTrack?>(null) }
             var shouldReviewTrack by remember { mutableStateOf(false) }
+
 
 
             onShake = {
@@ -244,6 +244,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+
             PitchAppTheme {
                 FirebaseAuthHandler(
                     musicRepository = musicRepository,
@@ -257,8 +258,24 @@ class MainActivity : ComponentActivity() {
                     onReviewComplete = { shouldReviewTrack = false }
                 )
             }
+
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        sensorManager.registerListener(
+            shakeDetector,
+            sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+            SensorManager.SENSOR_DELAY_UI
+        )
+    }
+
+    override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(shakeDetector)
+    }
+
 }
 
 @Composable

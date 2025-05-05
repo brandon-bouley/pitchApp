@@ -6,6 +6,7 @@ import android.hardware.SensorManager
 import android.util.Log
 import kotlin.math.sqrt
 
+
 class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
     private var shakeThresholdGravity = 1.7f
     private var lastShakeTime = 0L
