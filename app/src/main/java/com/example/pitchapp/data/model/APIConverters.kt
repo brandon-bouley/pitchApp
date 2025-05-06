@@ -48,7 +48,7 @@ fun ApiAlbum.toDomainAlbum(): Album {
 
 // --- Album mapping for album.getinfo endpoint ---
 fun AlbumDetail.toDomainAlbum(): Album {
-    val primaryImage = image.lastOrNull { it.size == "extralarge" }?.url
+    val primaryImage = image.lastOrNull { it?.size == "extralarge" }?.url
         ?: image.firstOrNull()?.url
         ?: ""
 
