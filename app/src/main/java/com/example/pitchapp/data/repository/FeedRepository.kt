@@ -47,9 +47,15 @@ class FeedRepository(
                         is Result.Success -> {
                             albumMap[albumId] = Pair(albumResult.data, reviews)
                         }
+
                         is Result.Error -> {
-                            Log.w("FEED_REPO", "Failed to fetch album $albumId", albumResult.exception)
+                            Log.w(
+                                "FEED_REPO",
+                                "Failed to fetch album $albumId",
+                                albumResult.exception
+                            )
                         }
+
                         else -> throw IllegalStateException("Unexpected result type")
                     }
                 }
