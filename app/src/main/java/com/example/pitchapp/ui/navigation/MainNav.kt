@@ -30,6 +30,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.pitchapp.R
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.ui.components.ThemeToggle
+import com.example.pitchapp.viewmodel.SearchViewModel
 import com.google.gson.Gson
 
 
@@ -63,9 +64,11 @@ sealed class Screen(val route: String) {
         val label: String
     )
 
-
 @Composable
-fun BottomNavBar(navController: NavController) {
+fun BottomNavBar(
+    navController: NavController,
+    searchViewModel: SearchViewModel
+) {
     NavigationBar {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
@@ -82,6 +85,9 @@ fun BottomNavBar(navController: NavController) {
                 label = { Text(item.label) },
                 selected = currentDestination?.route == item.screen.route,
                 onClick = {
+                    if (currentDestination?.route != item.screen.route) {
+                        searchViewModel.resetSearch()  // Use the passed ViewModel
+                    }
                     navController.navigate(item.screen.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true

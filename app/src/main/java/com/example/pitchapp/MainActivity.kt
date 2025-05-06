@@ -151,6 +151,9 @@ class MainActivity : ComponentActivity() {
         val api = LastFmApi.service
         val musicRepository = MusicRepository(api)
 
+        FirebaseFirestore.getInstance().enableNetwork()
+
+
         // Repository initialization
         val reviewRepository = ReviewRepository()
         val feedRepository = FeedRepository(

@@ -96,7 +96,7 @@ fun MainApp(
 
     PitchAppTheme(darkTheme = darkTheme) {
         Scaffold(
-            bottomBar = { BottomNavBar(navController) },
+            bottomBar = { BottomNavBar(navController, viewModel(factory = searchViewModelFactory)) },
             topBar = {
                 LogoHeader(
                     darkTheme = darkTheme,
