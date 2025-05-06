@@ -1,5 +1,4 @@
 package com.example.pitchapp.ui.screens.profile
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,11 +23,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
-import com.example.pitchapp.data.model.Profile
 import com.example.pitchapp.data.model.UserSummary
 import java.util.*
 
-
+//Displays user profile information
+// fetches state data using collectAsState()
+//This file allows users to set their bio, light/dark mode prefs, view followers/following, and
+//their average rating
 
 @Composable
 fun ProfileScreen(
@@ -60,7 +61,7 @@ fun ProfileScreen(
             Button(onClick = { navController.navigate("login") }) {
                 Text("Login")
             }
-
+//if not logged in prompt user to log in/create account
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(onClick = { navController.navigate("signup") }) {
@@ -73,6 +74,7 @@ fun ProfileScreen(
                 viewModel.loadProfile(uid)
             }
         }
+        //else load profile
 
         when (val state = profileState) {
             is ProfileViewModel.ProfileState.Loading -> {
@@ -85,7 +87,8 @@ fun ProfileScreen(
 
             is ProfileViewModel.ProfileState.Success -> {
                 val profile = state.profile
-
+                //if eeverything loaded correctly, set the theme/bio/followers to the saved state
+                //or default if not created
                 LaunchedEffect(profile.themePreference) {
                     editedTheme = profile.themePreference
                 }
@@ -108,6 +111,7 @@ fun ProfileScreen(
                     UserList(title = "Followers", users = followers) { uid ->
                         navController.navigate("profile/$uid")
                     }
+                    //use simple time format function to display just month and year
 
                     UserList(title = "Following", users = following) { uid ->
                         navController.navigate("profile/$uid")
@@ -116,12 +120,12 @@ fun ProfileScreen(
                     Text("Average Rating: ${"%.1f".format(profile.averageRating)}")
                     Text("Theme: ${profile.themePreference.capitalize()}")
                     Spacer(modifier = Modifier.height(16.dp))
-
+                    //this handles the bio part
                     if (isEditing) {
                         OutlinedTextField(
                             value = editedBio,
                             onValueChange = {
-                                if (it.length <= 150) editedBio = it
+                                if (it.length <= 150) editedBio = it //set char limit to 150
                             },
                             label = { Text("Edit Bio") },
                             maxLines = 3,
@@ -135,7 +139,7 @@ fun ProfileScreen(
                             Text("Dark Mode")
                             Spacer(modifier = Modifier.width(8.dp))
                             Switch(
-                                checked = editedTheme == "dark",
+                                checked = editedTheme == "dark",    //logic handling the toggle
                                 onCheckedChange = {
                                     editedTheme = if (it) "dark" else "light"
                                 }
@@ -143,7 +147,7 @@ fun ProfileScreen(
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
-
+                        //this is the save changes button logic
                         Button(
                             onClick = {
                                 coroutineScope.launch {
@@ -155,6 +159,8 @@ fun ProfileScreen(
                                     authViewModel.setThemePreference(editedTheme)
                                     onThemeChanged()
                                     isEditing = false
+                                    //if changes are made, save the changes and refresh the profile
+                                    //to display latest changes
                                     viewModel.refreshProfile(userId!!)
                                 }
                             },
@@ -163,6 +169,7 @@ fun ProfileScreen(
                             Text("Save")
                         }
                     } else {
+                        //default values
                         Text("Bio: ${profile.bio ?: "No bio set."}")
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
@@ -195,7 +202,7 @@ fun ProfileScreen(
         }
     }
 }
-
+//simple helper function using Firebase timestamp info
 fun formatTimestamp(timestamp: com.google.firebase.Timestamp): String {
     val date = timestamp.toDate()
     val sdf = SimpleDateFormat("MMMM yyyy", Locale.getDefault())

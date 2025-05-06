@@ -12,6 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.pitchapp.data.model.UserSummary
 
+
+//this file is used to hold the list of followers/following
+//A list of UserSummary, which is itself a simple list <doc id, username>
+//Once a user is clicked it should nav to their profile
+
 @Composable
 fun UserList(
     title: String,

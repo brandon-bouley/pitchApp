@@ -10,11 +10,13 @@ import com.example.pitchapp.viewmodel.AuthViewModel
 import com.example.pitchapp.ui.navigation.Screen
 import kotlinx.coroutines.launch
 
-
+//this file handles all of the sign up logic
+//allows user to create a new user, once username/pass are entered, a new document is created
+//in the users collection in firebase.
 @Composable
 fun SignUpScreen(
     navController: NavController,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel  //need nav and authentication for redirect and firebase protocol
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -34,7 +36,7 @@ fun SignUpScreen(
         Text("Create Account", style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.height(24.dp))
-
+//simple text fields
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
@@ -48,7 +50,7 @@ fun SignUpScreen(
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth()
         )
-
+//retype password (to make it feel legit)
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
@@ -65,6 +67,8 @@ fun SignUpScreen(
                 } else {
                     coroutineScope.launch {
                         authViewModel.createAccount(username, password,
+                            //currently not encrypting passwords because no important data is stored,
+                            //but if app was to be published we would need added security here
                             onSuccess = {
                                 isLoading = false
                                 println("Signup successful! Navigating to Feed")
@@ -85,6 +89,7 @@ fun SignUpScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading
         ) {
+            //for ui
             if (isLoading) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.onPrimary,

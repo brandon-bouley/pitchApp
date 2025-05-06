@@ -18,7 +18,11 @@ import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 
-
+//Used to display other users profile information
+//current user profile shows more data than what we would want others to see
+//created this file to keep things seperate
+//Also created follow button for these users, which should add the selected user to the current user's
+//following list
 @Composable
 fun OtherUserProfileScreen(
     navController: NavController,
@@ -33,6 +37,8 @@ fun OtherUserProfileScreen(
         viewModel.loadProfile(profileUserId)
     }
 
+    //load the profile
+
     when (val state = profileState) {
         is ProfileViewModel.ProfileState.Loading -> {
             SpinningRecord()
@@ -40,6 +46,7 @@ fun OtherUserProfileScreen(
         is ProfileViewModel.ProfileState.Error -> {
             Text("Error loading user: ${state.message}")
         }
+        //if success we want to show that users data
         is ProfileViewModel.ProfileState.Success -> {
             val profile = state.profile
             val isFollowing = profile.followers.contains(currentUserId)
@@ -52,7 +59,7 @@ fun OtherUserProfileScreen(
                 Text("Following: ${profile.following.size}")
                 Text("Songs Rated: ${profile.reviewCount}")
                 Text("Average Rating: ${"%.1f".format(profile.averageRating)}")
-
+//add follow button functionality
                 Button(
                     onClick = {
                         coroutineScope.launch {
@@ -61,24 +68,26 @@ fun OtherUserProfileScreen(
                                     currentUserId,
                                     profileUserId,
                                     onSuccess = { viewModel.refreshProfile(profileUserId) },
-                                    onFailure = { /* Handle UI error */ }
+                                    onFailure = { }
                                 )
                             } else {
                                 viewModel.followUser(
                                     currentUserId,
                                     profileUserId,
                                     onSuccess = { viewModel.refreshProfile(profileUserId) },
-                                    onFailure = { /* Handle UI error */ }
+                                    onFailure = {  }
                                 )
                             }
                         }
                     }
                 ) {
                     Text(if (isFollowing) "Unfollow" else "Follow")
+                    //add unfollow option
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = { navController.popBackStack() }) {
+                    //use popBackStack() to go back
                     Text("Back")
                 }
             }

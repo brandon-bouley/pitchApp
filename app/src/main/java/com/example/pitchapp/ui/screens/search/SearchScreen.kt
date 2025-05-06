@@ -62,7 +62,7 @@ import androidx.compose.runtime.*
 import androidx.compose.foundation.clickable
 import androidx.navigation.compose.*
 
-
+//handles ALL search screen logic, both albums and users
 
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)

@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 
+//for settings page
 @Entity(tableName = "user_preferences")
 @TypeConverters(UserConverters::class)
 data class UserPreference(

@@ -12,7 +12,7 @@ import com.google.firebase.firestore.Query
 import com.example.pitchapp.data.model.UserSummary
 import kotlinx.coroutines.tasks.await
 
-
+//fetches user profile information
 class ProfileRepository {
     private val db = FirebaseFirestore.getInstance()
 

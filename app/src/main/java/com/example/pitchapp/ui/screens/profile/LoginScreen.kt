@@ -10,14 +10,14 @@ import com.example.pitchapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 import com.example.pitchapp.ui.navigation.Screen
 
-
+//displays user sign in when profile tab is clicked
 
 @Composable
 fun LoginScreen(
     navController: NavController,
     authViewModel: AuthViewModel
 ) {
-    var username by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }         //all stored in db
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -32,7 +32,7 @@ fun LoginScreen(
         Text("Login", style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.height(24.dp))
-
+        //create text fields
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
@@ -48,7 +48,7 @@ fun LoginScreen(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
-
+//button logic for sign in
         Button(
             onClick = {
                 coroutineScope.launch {
@@ -74,7 +74,7 @@ fun LoginScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
+//button logic for sign up
         TextButton(
             onClick = { navController.navigate("signup") }
         ) {
