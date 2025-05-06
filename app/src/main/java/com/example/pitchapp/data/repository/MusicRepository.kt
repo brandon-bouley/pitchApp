@@ -38,9 +38,7 @@ class MusicRepository @Inject constructor(
     }
 
     private val db = Firebase.firestore
-    private val albumsRef = db.collection("albums")
-    private val tracksRef = db.collection("tracks")
-
+// Defines endpoint for api call
    suspend fun getTopTracks(limit: Int = 11): List<RandomTrack> {
         return try {
             val response = lastFmService.getTopTracks(

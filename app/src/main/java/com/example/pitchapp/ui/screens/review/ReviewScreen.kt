@@ -77,6 +77,10 @@ fun AddReviewScreen(
         }
     }
 
+    LaunchedEffect(userId) {
+        Log.d("AddReviewScreen", "Current user ID: $userId")
+    }
+
     Scaffold { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -199,7 +203,8 @@ fun AddReviewScreen(
                         }
                     },
                     enabled = uiState.isFormValid && !uiState.isSubmitting && userId != null
-                ) {
+                )
+                {
                     if (uiState.isSubmitting) {
                         SpinningRecord()
                     } else {

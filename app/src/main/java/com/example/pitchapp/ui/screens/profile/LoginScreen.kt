@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import com.example.pitchapp.ui.theme.PitchAppTheme
+
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -22,11 +24,16 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.pitchapp.R
 import com.example.pitchapp.ui.navigation.Screen
+import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
+
+
 
 @Composable
 fun LoginScreen(
@@ -40,6 +47,7 @@ fun LoginScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
+    PitchAppTheme {
 
     Box(
         modifier = Modifier
@@ -159,31 +167,19 @@ fun LoginScreen(
                         }
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Forgot Password
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        TextButton(
-                            onClick = { /* Handle forgot password */ },
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        ) {
-                            Text(
-                                "Forgot Password?",
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Login Button
                     Button(
+                        colors = ButtonDefaults.buttonColors(containerColor =MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         onClick = {
                             if (username.isBlank() || password.isBlank()) {
                                 errorMessage = "Please enter both username and password"
                                 return@Button
                             }
+
 
                             isLoading = true
                             coroutineScope.launch {
@@ -209,10 +205,7 @@ fun LoginScreen(
                         enabled = !isLoading
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
+                            SpinningRecord()
                         } else {
                             Text(
                                 "LOGIN",
@@ -255,7 +248,7 @@ fun LoginScreen(
             ) {
                 Text(
                     "Don't have an account?",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
@@ -270,4 +263,5 @@ fun LoginScreen(
             }
         }
     }
+        }
 }

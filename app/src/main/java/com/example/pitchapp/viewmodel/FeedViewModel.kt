@@ -36,7 +36,7 @@ class FeedViewModel(
                             Log.d("Reviews","review album details: ${review.albumDetails}")
                             FeedItem.ReviewItem(
                                 review = review,
-                                album = review.albumDetails // Should be populated in repository
+                                album = review.albumDetails
                             )
                         }
                     )

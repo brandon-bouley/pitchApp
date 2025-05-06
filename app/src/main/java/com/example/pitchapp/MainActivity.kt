@@ -22,6 +22,13 @@ import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ProfileRepository
 import com.example.pitchapp.data.repository.ReviewRepository
 import android.hardware.SensorManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.navigation.compose.ComposeNavigator
+import androidx.navigation.compose.DialogNavigator
+import androidx.navigation.navigation
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
 import com.example.pitchapp.viewmodel.AuthViewModel
 import com.example.pitchapp.viewmodel.FeedViewModel
@@ -40,10 +47,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlin.random.Random
 import android.hardware.Sensor
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.pitchapp.ui.components.ShakeDetector
-
-
-
+import com.example.pitchapp.ui.navigation.Screen
+import com.example.pitchapp.ui.screens.profile.LoginScreen
+import com.example.pitchapp.ui.screens.profile.SignUpScreen
 
 
 class ProfileViewModelFactory(
@@ -130,11 +141,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
         // Dependency setup
         val api = LastFmApi.service
         val musicRepository = MusicRepository(api)
-
-        FirebaseFirestore.getInstance().enableNetwork()
 
 
         // Repository initialization
@@ -146,7 +156,6 @@ class MainActivity : ComponentActivity() {
         val profileRepository = ProfileRepository()
 
         // ViewModel factories
-
         val feedViewModelFactory = FeedViewModelFactory(feedRepository)
         val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
         val profileViewModelFactory = ProfileViewModelFactory(profileRepository)
@@ -164,15 +173,13 @@ class MainActivity : ComponentActivity() {
                     val tracks = musicRepository.getTopTracks()
                     if (tracks.isNotEmpty()) {
                         val randomTrack = tracks[Random.nextInt(tracks.size)]
-                       selectedTrack = randomTrack
+                        selectedTrack = randomTrack
                         showDialog = true
                     }
                 }
 
             }
-
             if (showDialog) {
-
                 AlertDialog(
                     onDismissRequest = { showDialog = false },
                     title = { Text("Random Track 🎵") },
@@ -212,7 +219,7 @@ class MainActivity : ComponentActivity() {
                     },
                     confirmButton = {
                         Row {
-                            TextButton(onClick = {showDialog = false }) {
+                            TextButton(onClick = { showDialog = false }) {
                                 Text("Close")
                             }
                             Spacer(modifier = Modifier.width(16.dp))
@@ -227,7 +234,6 @@ class MainActivity : ComponentActivity() {
                     }
                 )
             }
-
 
             PitchAppTheme {
                 FirebaseAuthHandler(
@@ -265,6 +271,7 @@ class MainActivity : ComponentActivity() {
 
 }
 
+
 @Composable
 private fun FirebaseAuthHandler(
     musicRepository: MusicRepository,
@@ -276,35 +283,122 @@ private fun FirebaseAuthHandler(
     shouldReviewTrack: Boolean,
     onReviewComplete: () -> Unit
 ) {
+    val context = LocalContext.current
     val authViewModel: AuthViewModel = viewModel()
-    val reviewViewModelFactory = ReviewViewModelFactory(
-        reviewRepository = reviewRepository,
-        authViewModel = authViewModel
-    )
+
+
+    val authState by authViewModel.userId.collectAsState()
+
+    // Create auth-only NavController
+    val authNavController = remember(context) {
+        NavHostController(context).apply {
+            navigatorProvider.addNavigator(ComposeNavigator())
+            navigatorProvider.addNavigator(DialogNavigator())
+        }
+    }
+
+    // Handle successful authentication
+    LaunchedEffect(authState) {
+        if (!authState.isNullOrEmpty()) {
+            // Clear back stack and switch to main app
+            authNavController.navigate("main_app") {
+                popUpTo(0)
+                launchSingleTop = true
+            }
+        }
+    }
+
+    CompositionLocalProvider(
+        LocalViewModelStoreOwner provides object : ViewModelStoreOwner {
+            override val viewModelStore = remember { ViewModelStore() }
+        }
+    ) {
+        NavHost(
+            navController = authNavController,
+            startDestination = if (authState != null) "main_app" else "auth"
+        ) {
+            // Auth Flow
+            navigation(
+                startDestination = "login",
+                route = "auth"
+            ) {
+                composable("login") {
+                    LoginScreen(
+                        navController = authNavController,
+                        authViewModel = authViewModel
+                    )
+                }
+                composable("signup") {
+                    SignUpScreen(
+                        navController = authNavController,
+                        authViewModel = authViewModel
+                    )
+                }
+            }
+
+            // Main App Flow
+            composable("main_app") {
+                AppEntry(
+                    authViewModel = authViewModel,
+                    musicRepository = musicRepository,
+                    reviewRepository = reviewRepository,
+                    feedViewModelFactory = feedViewModelFactory,
+                    searchViewModelFactory = searchViewModelFactory,
+                    profileViewModelFactory = profileViewModelFactory,
+                    selectedTrack = selectedTrack,
+                    shouldReviewTrack = shouldReviewTrack,
+                    onReviewComplete = onReviewComplete
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppEntry(
+    authViewModel: AuthViewModel,
+    musicRepository: MusicRepository,
+    reviewRepository: ReviewRepository,
+    feedViewModelFactory: FeedViewModelFactory,
+    searchViewModelFactory: SearchViewModelFactory,
+    profileViewModelFactory: ProfileViewModelFactory,
+    selectedTrack: RandomTrack?,
+    shouldReviewTrack: Boolean,
+    onReviewComplete: () -> Unit
+) {
+    // Create main app NavController
+    val navController = rememberNavController()
+    val reviewViewModelFactory = remember(reviewRepository, authViewModel) {
+        ReviewViewModelFactory(reviewRepository, authViewModel)
+    }
+
     MainApp(
         feedViewModelFactory = feedViewModelFactory,
+        reviewViewModelFactory = reviewViewModelFactory,
         searchViewModelFactory = searchViewModelFactory,
         profileViewModelFactory = profileViewModelFactory,
-        reviewViewModelFactory = reviewViewModelFactory,
+        authViewModel = authViewModel,
+        musicRepository = musicRepository,
+        reviewRepository = reviewRepository,
         selectedTrack = selectedTrack,
         shouldReviewTrack = shouldReviewTrack,
         onReviewComplete = onReviewComplete,
-        authViewModel = authViewModel,
-        musicRepository = musicRepository,
-        reviewRepository = reviewRepository
+        navController = navController
     )
 }
+
+
 
 
 @Composable
-fun PitchAppTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = Color(0xFFA3C1D3)
-        ),
-        content = content
-    )
-}
+        fun PitchAppTheme(content: @Composable () -> Unit) {
+            MaterialTheme(
+                colorScheme = lightColorScheme(
+                    primary = Color(0xFFA3C1D3)
+                ),
+                content = content
+            )
+        }
 
 
 
