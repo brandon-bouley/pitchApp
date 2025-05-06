@@ -59,29 +59,33 @@ fun ReviewCard(
             modifier = Modifier.padding(16.dp),
         verticalAlignment = Alignment.Top
         ) {
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-            .clip(MaterialTheme.shapes.small)
-        ) {
-        reviewItem.album?.artworkUrl?.takeIf { it.isNotEmpty() }?.let { url ->
-            AsyncImage(
-                model = url,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        } ?: run {
-            Icon(
-                imageVector = Icons.Default.Email,
-                contentDescription = "Review placeholder",
-                modifier = Modifier.fillMaxSize(),
-                tint = MaterialTheme.colorScheme.secondary
-            )
-        }
-    }
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(MaterialTheme.shapes.small)
+            ) {
 
-        Spacer(Modifier.width(16.dp))
+                reviewItem.album
+                    ?.artworkUrl
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { url ->
+                        AsyncImage(
+                            model = url,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    ?: Icon(
+                        imageVector = Icons.Default.Email,
+                        contentDescription = "Review placeholder",
+                        modifier = Modifier.fillMaxSize(),
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                    }
+
+
+            Spacer(Modifier.width(16.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Row(

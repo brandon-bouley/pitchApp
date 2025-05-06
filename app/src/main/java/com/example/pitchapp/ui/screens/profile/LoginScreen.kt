@@ -5,6 +5,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.pitchapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
@@ -54,9 +56,8 @@ fun LoginScreen(
                 coroutineScope.launch {
                     authViewModel.login(username, password,
                         onSuccess = {
-                            navController.navigate(Screen.Feed.route) {
-                                popUpTo(0) { inclusive = true }
-                                launchSingleTop = true
+                            navController.navigate("main_app") {
+                                popUpTo("auth") { inclusive = true }
                             }
                         },
                         onFailure = { error -> errorMessage = error }

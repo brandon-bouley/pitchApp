@@ -15,11 +15,19 @@ class ProfileRepository {
     private val db = FirebaseFirestore.getInstance()
 
     suspend fun getProfile(userId: String): Profile {
-        val snapshot = db.collection("users").document(userId).get().await()
-        if (!snapshot.exists()) {
-            throw Exception("User profile not found.")
+        val docRef = db.collection("users").document(userId)
+        val document = docRef.get().await()
+
+        if (!document.exists()) {
+            throw Exception("User not found")
         }
-        return snapshot.toObject(Profile::class.java) ?: throw Exception("Failed to parse user profile.")
+
+        return try {
+            document.toObject(Profile::class.java)?.copy(userId = document.id)
+                ?: throw Exception("Invalid document format")
+        } catch (e: Exception) {
+            throw Exception("Error parsing profile: ${e.message}")
+        }
     }
 
     private suspend fun getReviews(userId: String): List<Review> {

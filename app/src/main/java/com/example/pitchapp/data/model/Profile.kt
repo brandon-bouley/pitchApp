@@ -15,8 +15,10 @@ data class Profile(
     val reviewCount: Int = 0,
     val averageRating: Float = 0f,
     val createdAt: Timestamp = Timestamp.now(),
+    val isPublic: Boolean = true,
+    val recentReviews: List<Review> = emptyList()
 ) {
-    @Exclude var reviews: List<Review> = emptyList()  // Not stored in Firestore
+
 
 
     init {

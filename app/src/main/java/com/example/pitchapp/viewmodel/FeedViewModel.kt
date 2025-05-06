@@ -34,7 +34,7 @@ class FeedViewModel(
                         recentResult.map { review ->
                             FeedItem.ReviewItem(
                                 review = review,
-                                album = review.albumDetails // Should be populated in repository
+                                album = review.albumDetails
                             )
                         }
                     )

@@ -37,9 +37,12 @@ class ProfileViewModel(
         viewModelScope.launch {
             _profileState.value = ProfileState.Loading
             try {
+                println("Attempting to load profile for user ID: $userId")
                 val profile = repository.getProfile(userId)
+                println("Successfully loaded profile: $profile")
                 _profileState.value = ProfileState.Success(profile)
             } catch (e: Exception) {
+                println("Error loading profile: ${e.stackTraceToString()}")
                 _profileState.value = ProfileState.Error(
                     message = e.message ?: "Failed to load profile"
                 )
@@ -57,6 +60,8 @@ class ProfileViewModel(
             }
         }
     }
+
+
 
     suspend fun updateProfile(userId: String, newBio: String, newTheme: String) {
         try {
@@ -95,6 +100,36 @@ class ProfileViewModel(
                 onFailure(e.message ?: "Follow failed")
             }
         }
+
+    fun updateThemePreference(userId: String, theme: String) {
+        viewModelScope.launch {
+            FirebaseFirestore.getInstance().collection("users")
+                .document(userId)
+                .update("themePreference", theme)
+                .await()
+            refreshProfile(userId)
+        }
+    }
+
+    fun updatePrivacyPreference(userId: String, isPublic: Boolean) {
+        viewModelScope.launch {
+            FirebaseFirestore.getInstance().collection("users")
+                .document(userId)
+                .update("isPublic", isPublic)
+                .await()
+            refreshProfile(userId)
+        }
+    }
+
+    fun updateBio(userId: String, newBio: String) {
+        viewModelScope.launch {
+            FirebaseFirestore.getInstance().collection("users")
+                .document(userId)
+                .update("bio", newBio)
+                .await()
+            refreshProfile(userId)
+        }
+    }
 
         fun unfollowUser(
             currentUserId: String,
