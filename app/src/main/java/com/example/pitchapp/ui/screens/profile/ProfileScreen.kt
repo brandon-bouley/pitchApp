@@ -83,10 +83,9 @@ fun ProfileScreen(
                         IconButton(onClick = { showLogoutDialog = true }) {
                             Icon(Icons.Default.ExitToApp, contentDescription = "Logout")
                         }
-                    } else {
                         IconButton(onClick = { navController.navigate(Screen.UserSearch.route) }) {
                             Icon(Icons.Default.Search, contentDescription = "Find Users")
-                        }
+                    }
                     }
                 }
             )
