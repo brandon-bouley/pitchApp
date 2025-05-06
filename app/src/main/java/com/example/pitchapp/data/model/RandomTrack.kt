@@ -1,19 +1,35 @@
 package com.example.pitchapp.data.model
+import com.example.pitchapp.data.model.Album.Track
 import com.google.gson.annotations.SerializedName
 
-
+data class RandoTrack(
+    @SerializedName("id")
+    var id: String = "",
+    @SerializedName("mbid")
+    val mbid: String? = null,
+    @SerializedName("name")
+    val name: String = "",
+    @SerializedName("artist")
+    val artist: String = "",
+)
 data class RandomTrack(
+    @SerializedName("id")
+    val id: String,
+    @SerializedName("mbid")
+    val mbid: String?,
+
     @SerializedName("name")
     val name: String,
+    @SerializedName("artist")
+    val artist: Artist,
 
-    @SerializedName("playcount")
-    val playcount: Int,
+    @SerializedName("playCount")
+    val playCount: Int,
 
     @SerializedName("listeners")
     val listeners: Int,
 
-    @SerializedName("mbid")
-    val mbid: String?,
+
 
     @SerializedName("url")
     val url: String,
@@ -21,8 +37,7 @@ data class RandomTrack(
     @SerializedName("streamable")
     val streamable: Streamable,
 
-    @SerializedName("artist")
-    val artist: Artist
+
 ) {
     data class Streamable(
         @SerializedName("fulltrack")
@@ -43,6 +58,11 @@ data class RandomTrack(
         val url: String
     )
 }
+
+
+data class TracksResponse(
+    @SerializedName("track") val track: RandomTrack
+)
 data class TopTracksResponse(
     @SerializedName("tracks") val tracks: Tracks
 )
@@ -50,3 +70,11 @@ data class TopTracksResponse(
 data class Tracks(
     @SerializedName("track") val track: List<RandomTrack>
 )
+
+
+//endregion
+
+
+
+
+

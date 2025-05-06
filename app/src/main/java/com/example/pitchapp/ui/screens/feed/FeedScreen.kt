@@ -75,7 +75,7 @@ private fun FeedListContent(
                     is FeedItem.SectionHeader -> "header_${item.title}"
                     is FeedItem.ReviewItem -> "review_${item.review.id}"
                     is FeedItem.AlbumItem -> "album_${item.album.id}"
-                    is FeedItem.TrackItem -> "track_${item.track.mbid}"
+                    is FeedItem.TrackItem -> "track_${item.track.id}"
                 }
             }
         ) { item ->
@@ -94,7 +94,11 @@ private fun FeedListContent(
                 is FeedItem.ReviewItem ->
                     ReviewCard(
                         reviewItem = item,
-                        onClick = { navController.navigate(Screen.AlbumDetail.createRoute(item.review.albumId)) },
+                        onClick = {
+                            navController.navigate(
+                                Screen.Profile.createRoute(item.review.username)
+                            )
+                        },
                     )
 
                 is FeedItem.AlbumItem ->

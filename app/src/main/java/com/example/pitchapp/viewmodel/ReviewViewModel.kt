@@ -1,9 +1,12 @@
 package com.example.pitchapp.viewmodel
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pitchapp.data.model.Album
+import com.example.pitchapp.data.model.RandoTrack
+import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.model.Review
 import com.example.pitchapp.data.repository.ReviewRepository
 import com.google.firebase.Firebase
@@ -29,6 +32,27 @@ class ReviewViewModel(
 
     private val _reviews = MutableStateFlow<List<Review>>(emptyList())
     val reviews: StateFlow<List<Review>> = _reviews.asStateFlow()
+    private val _selectedTrack = MutableStateFlow<RandomTrack?>(null)
+    val selectedTrack: StateFlow<RandomTrack?> get() = _selectedTrack
+
+    private val _reviewText = MutableStateFlow("")
+    val reviewText: StateFlow<String> get() = _reviewText
+
+    private val _rating = MutableStateFlow(0f)
+    val rating: StateFlow<Float> get() = _rating
+
+    private val _submissionResult = MutableStateFlow<Result<Unit>?>(null)
+    val submissionResult: StateFlow<Result<Unit>?> get() = _submissionResult
+
+    fun setSelectedTrack(track: RandomTrack) {
+        _selectedTrack.value = track
+    }
+    fun clearReviewState() {
+        _selectedTrack.value = null
+        _reviewText.value = ""
+        _rating.value = 0f
+        _submissionResult.value = null
+    }
 
     fun loadReviews(albumId: String) {
         viewModelScope.launch {
@@ -67,6 +91,14 @@ class ReviewViewModel(
             errorMessage = null
         )
     }
+    fun updateTrackText(text: String) {
+        _reviewText.value = text
+    }
+
+    fun updateTrackRating(value: Float) {
+        _rating.value = value
+    }
+
 
     fun submitReview(onSuccess: () -> Unit) {
         val currentState = _uiState.value
@@ -144,6 +176,67 @@ class ReviewViewModel(
             }
         }
     }
+    fun submitTrackReview( onComplete: () -> Unit) {
+        val userId = authViewModel.userId.value
+        val track = _selectedTrack.value
+        val text = _reviewText.value
+        val stars = _rating.value
+        if (userId==null){
+            _submissionResult.value = Result.Error(
+                IllegalArgumentException("You must be signed in to submit a review")
+            )
+            return
+        }
+
+
+
+        if (track == null) {
+            _submissionResult.value = Result.Error(
+                IllegalArgumentException("You must select a track before submitting a review")
+            )
+            return
+        }
+
+        if (text.isBlank() || stars < 0.5f) {
+            _submissionResult.value = Result.Error(
+                IllegalArgumentException("Please write a review and select a rating of at least 0.5 stars")
+            )
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val userDoc = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(userId)
+                    .get()
+                    .await()
+
+                val username = userDoc.getString("username") ?: "Anonymous"
+
+                val review = Review(
+                    albumId = track.id ?: "${track.artist.name}-${track.name}",
+                    userId = userId,
+                    username = username.ifBlank { "Anonymous" },
+                    content = text,
+                    rating = stars,
+                    timestamp = Timestamp.now()
+                )
+                val result = reviewRepository.insertTrackReview(review)
+                _submissionResult.value = result
+
+                if (result is Result.Success) {
+                    _reviewText.value = ""
+                    _rating.value = 0f
+                    onComplete()
+                }
+
+
+            } catch (e: Exception) {
+                _submissionResult.value = Result.Error(e)
+            }
+        }
+    }
+
 
     // Add like functionality
     fun toggleLike(review: Review) {
@@ -185,6 +278,7 @@ class ReviewViewModel(
 
     data class ReviewUiState(
         val selectedAlbum: Album? = null,
+        val selectedTrack: RandoTrack? = null,
         val rating: Float = 0f,
         val reviewText: String = "",
         val isSubmitting: Boolean = false,
@@ -198,5 +292,9 @@ class ReviewViewModel(
                     reviewText.length in 3..500
     }
 
+
+
     private fun Float.roundToNearestHalf(): Float = (this * 2).roundToInt() / 2f
 }
+
+

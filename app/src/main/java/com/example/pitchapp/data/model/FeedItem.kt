@@ -3,7 +3,8 @@ package com.example.pitchapp.data.model
 sealed class FeedItem {
     data class ReviewItem(
         val review: Review,
-        val album: Album? = null
+        val album: Album? = null,
+        val track: RandoTrack? = null
     ) : FeedItem()
 
     data class AlbumItem(

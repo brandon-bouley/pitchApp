@@ -122,7 +122,7 @@ fun AlbumDetailScreen(
                             ReviewCard(
                                 reviewItem = FeedItem.ReviewItem(
                                     review,
-                                    review.albumDetails ?: nonNullAlbum // Fallback to current album
+                                    album=review.albumDetails ?: nonNullAlbum // Fallback to current album
                                 ),
                                 onClick = {
                                     navController.navigate(

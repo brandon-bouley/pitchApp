@@ -1,5 +1,6 @@
 package com.example.pitchapp.ui.screens.review
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,20 +22,29 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.pitchapp.ui.navigation.Screen
-import com.example.pitchapp.viewmodel.TrackReviewViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.example.pitchapp.data.model.Result
+import com.example.pitchapp.data.repository.MusicRepository
+import com.example.pitchapp.viewmodel.AuthViewModel
+import com.example.pitchapp.viewmodel.ReviewViewModel
+import com.example.pitchapp.viewmodel.SearchViewModel
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 @Composable
 fun AddTrackReviewScreen(
     navController: NavController,
-    trackReviewViewModel: TrackReviewViewModel
+    reviewViewModel: ReviewViewModel,
+    authViewModel: AuthViewModel,
+    trackId: String?
 ) {
-    val selectedTrack by trackReviewViewModel.selectedTrack.collectAsState()
-    val reviewText by trackReviewViewModel.reviewText.collectAsState()
-    val rating by trackReviewViewModel.rating.collectAsState()
-    val submissionResult by trackReviewViewModel.submissionResult.collectAsState()
+    val selectedTrack by reviewViewModel.selectedTrack.collectAsState()
+    val reviewText by reviewViewModel.reviewText.collectAsState()
+    val rating by reviewViewModel.rating.collectAsState()
+    val submissionResult by reviewViewModel.submissionResult.collectAsState()
+    val userId by authViewModel.userId.collectAsState()
+
 
     Scaffold { padding ->
         Column(
@@ -50,7 +60,7 @@ fun AddTrackReviewScreen(
 
             OutlinedTextField(
                 value = reviewText,
-                onValueChange = { trackReviewViewModel.updateReviewText(it) },
+                onValueChange = { reviewViewModel.updateTrackText(it) },
                 label = { Text("Your Review") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -67,44 +77,44 @@ fun AddTrackReviewScreen(
             Text("Rating:", style = MaterialTheme.typography.titleMedium)
             StarRating(
                 rating = rating,
-                onRatingChange = { trackReviewViewModel.updateRating(it.toFloat()) }
+                onRatingChange = { reviewViewModel.updateTrackRating(it.toFloat()) }
             )
 
             Spacer(Modifier.height(16.dp))
 
             Button(
                 onClick = {
-                    val userId = Firebase.auth.currentUser?.uid ?: return@Button
-                    val username = Firebase.auth.currentUser?.displayName ?: "Anonymous"
-                    trackReviewViewModel.submitReview(userId, username) {
-                        val trackId = selectedTrack?.mbid
+                    reviewViewModel.submitTrackReview {
                         if (trackId != null) {
-                            navController.navigate(Screen.AlbumDetail.createRoute(trackId))
+                            navController.navigate(Screen.AddTrackReview.createRoute(trackId))
                             navController.navigate(Screen.Feed.route) {
                                 popUpTo(Screen.Feed.route) { inclusive = true }
                             }
                         }
                     }
 
+
                     },
                 enabled = reviewText.isNotBlank() && rating > 0f,
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text("Submit Review")
-            }
-
-            submissionResult?.let {
-                when (it) {
-                    is Result.Error -> Text(
-                        it.exception.message ?: "Unknown error",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    else -> {
-                        trackReviewViewModel.clearReviewState()
+                submissionResult?.let {
+                    when (it) {
+                        is Result.Error -> Text(
+                            it.exception.message ?: "Unknown error",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                        else -> {
+                            reviewViewModel.clearReviewState()
+                        }
                     }
                 }
+
             }
+
+
         }
     }
 }

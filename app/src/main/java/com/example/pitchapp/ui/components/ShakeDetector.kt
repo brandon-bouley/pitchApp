@@ -6,8 +6,9 @@ import android.hardware.SensorManager
 import android.util.Log
 import kotlin.math.sqrt
 
+
 class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
-    private var shakeThresholdGravity = 1.7f
+    private var shakeThresholdGravity = 1.2f
     private var lastShakeTime = 0L
     private val shakeSlopTimeMs = 500
 
@@ -20,7 +21,6 @@ class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
 
         val gForce = sqrt((x * x + y * y + z * z) / (SensorManager.GRAVITY_EARTH * SensorManager.GRAVITY_EARTH))
         if (gForce > shakeThresholdGravity) {
-            Log.d("ShakeDetector", "Shake detected!")
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastShakeTime > shakeSlopTimeMs) {
                 lastShakeTime = currentTime

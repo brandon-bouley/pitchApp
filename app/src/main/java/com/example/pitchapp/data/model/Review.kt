@@ -7,6 +7,7 @@ import com.google.firebase.firestore.Exclude
 data class Review(
     @DocumentId val id: String = "",
     val albumId: String = "",
+    val trackId: String ="",
     val userId: String = "",
     val username: String = "",
     val content: String = "",
@@ -23,16 +24,27 @@ data class Review(
     }
 
     // Firestore serialization helper
-    fun toFirestoreMap(): Map<String, Any> = mapOf(
-        "albumId" to albumId,
-        "userId" to userId,
-        "username" to username,
-        "content" to content,
-        "rating" to rating,
-        "timestamp" to timestamp,
-        "likes" to likes,
-        "likeCount" to likes.size,
-        "favoriteTrack" to (favoriteTrack ?: ""),
-        "albumDetails" to (albumDetails ?: Album())
-    )
+    fun toFirestoreMap(): Map<String, Any> {
+        return hashMapOf<String, Any>().apply {
+            put("id", id)
+            put("albumId", albumId)
+            put("userId", userId)
+            put("username", username)
+            put("content", content)
+            put("rating", rating)
+            put("timestamp", timestamp)
+            put("likes", likes)
+            put("albumDetails", albumDetails?.toFirestoreMap() ?: hashMapOf<String, Any>())
+            put("favoriteTrack", favoriteTrack ?: "")
+        }
+    }
+
+    fun Album.toFirestoreMap(): Map<String, Any> {
+        return mapOf(
+            "id" to id,
+            "title" to title,
+            "artist" to artist,
+            "artworkUrl" to artworkUrl,
+        )
+    }
 }

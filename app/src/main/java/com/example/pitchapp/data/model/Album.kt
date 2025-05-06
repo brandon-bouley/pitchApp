@@ -32,6 +32,10 @@ data class AlbumSearchResponse(
     @SerializedName("results")
     val results: AlbumResults
 )
+data class RandomSearchResponse(
+    @SerializedName("tracks")
+    val tracks: List<Album>
+)
 
 data class AlbumResults(
     @SerializedName("opensearch:Query")

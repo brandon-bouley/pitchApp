@@ -15,32 +15,20 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.remote.LastFmApi
 import com.example.pitchapp.data.repository.FeedRepository
 import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ProfileRepository
 import com.example.pitchapp.data.repository.ReviewRepository
-import com.example.pitchapp.data.repository.TrackReviewRepository
 import android.hardware.SensorManager
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.navigation.compose.ComposeNavigator
-import androidx.navigation.compose.DialogNavigator
-import androidx.navigation.navigation
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
 import com.example.pitchapp.viewmodel.AuthViewModel
 import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ProfileViewModel
 import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
-import com.example.pitchapp.viewmodel.TrackReviewViewModel
+
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
@@ -51,14 +39,26 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlin.random.Random
+import android.hardware.Sensor
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.ComposeNavigator
+import androidx.navigation.compose.DialogNavigator
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
 import com.example.pitchapp.ui.components.ShakeDetector
-import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.ui.screens.profile.LoginScreen
 import com.example.pitchapp.ui.screens.profile.SignUpScreen
 
 
 class ProfileViewModelFactory(
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val musicRepository: MusicRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(
@@ -67,23 +67,12 @@ class ProfileViewModelFactory(
     ): T {
         return ProfileViewModel(
             repository = profileRepository,
+            musicRepository = musicRepository
         ) as T
     }
 }
 
-class RandomTrackViewModelFactory(
-    private val repository: TrackReviewRepository
-):  ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(
-        modelClass: Class<T>,
-        extras: CreationExtras
-    ): T {
-        return TrackReviewViewModel(
-            repository = repository,
-        ) as T
-    }
-}
+
 
 // FeedViewModelFactory
 class FeedViewModelFactory(
@@ -104,6 +93,7 @@ class ReviewViewModelFactory(
     private val reviewRepository: ReviewRepository,
     private val authViewModel: AuthViewModel
 ) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ReviewViewModel::class.java)) {
             return ReviewViewModel(reviewRepository, authViewModel) as T
@@ -149,16 +139,15 @@ class MainActivity : ComponentActivity() {
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
     private lateinit var musicRepository: MusicRepository
-    val trackReviewRepository = TrackReviewRepository()
-    val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository)
     private lateinit var onShake: () -> Unit
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        FirebaseApp.initializeApp(this)
         // Dependency setup
         val api = LastFmApi.service
         val musicRepository = MusicRepository(api)
+
+        FirebaseFirestore.getInstance().enableNetwork()
 
 
         // Repository initialization
@@ -167,15 +156,13 @@ class MainActivity : ComponentActivity() {
             reviewRepository = reviewRepository,
             musicRepository = musicRepository,
         )
-        val profileRepository = ProfileRepository()
-        val trackReviewRepository = TrackReviewRepository()
-        val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository)
+        val profileRepository = ProfileRepository(reviewRepository)
 
         // ViewModel factories
+
         val feedViewModelFactory = FeedViewModelFactory(feedRepository)
         val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
-        val profileViewModelFactory = ProfileViewModelFactory(profileRepository)
-
+        val profileViewModelFactory = ProfileViewModelFactory(profileRepository, musicRepository)
         onShake = {}
         shakeDetector = ShakeDetector { onShake() }
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
@@ -185,19 +172,20 @@ class MainActivity : ComponentActivity() {
             var selectedTrack by remember { mutableStateOf<RandomTrack?>(null) }
             var shouldReviewTrack by remember { mutableStateOf(false) }
 
-
             onShake = {
                 CoroutineScope(Dispatchers.Main).launch {
                     val tracks = musicRepository.getTopTracks()
                     if (tracks.isNotEmpty()) {
                         val randomTrack = tracks[Random.nextInt(tracks.size)]
-                        selectedTrack = randomTrack
+                       selectedTrack = randomTrack
                         showDialog = true
                     }
                 }
 
             }
+
             if (showDialog) {
+
                 AlertDialog(
                     onDismissRequest = { showDialog = false },
                     title = { Text("Random Track 🎵") },
@@ -218,7 +206,7 @@ class MainActivity : ComponentActivity() {
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "🔊 Playcount: ${selectedTrack?.playcount}",
+                                text = "🔊 Playcount: ${selectedTrack?.playCount}",
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(
@@ -237,7 +225,7 @@ class MainActivity : ComponentActivity() {
                     },
                     confirmButton = {
                         Row {
-                            TextButton(onClick = { showDialog = false }) {
+                            TextButton(onClick = {showDialog = false }) {
                                 Text("Close")
                             }
                             Spacer(modifier = Modifier.width(16.dp))
@@ -254,22 +242,40 @@ class MainActivity : ComponentActivity() {
             }
 
             PitchAppTheme {
-                    FirebaseAuthHandler(
-                        musicRepository = musicRepository,
-                        reviewRepository = reviewRepository,
-                        feedViewModelFactory = feedViewModelFactory,
-                        searchViewModelFactory = searchViewModelFactory,
-                        profileViewModelFactory = profileViewModelFactory,
-                        trackReviewViewModelFactory = trackViewModelFactory,
-                        selectedTrack = selectedTrack,
-                        shouldReviewTrack = shouldReviewTrack,
-                        onReviewComplete = { shouldReviewTrack = false }
-                    )
-                }
+                FirebaseAuthHandler(
+                    musicRepository = musicRepository,
+                    reviewRepository = reviewRepository,
+                    feedViewModelFactory = feedViewModelFactory,
+                    searchViewModelFactory = searchViewModelFactory,
+                    profileViewModelFactory = profileViewModelFactory,
+                    selectedTrack = selectedTrack,
+                    shouldReviewTrack = shouldReviewTrack,
+                    onReviewComplete = { shouldReviewTrack = false }
+                )
             }
+
+
         }
+
+
+    }
+    override fun onResume() {
+        super.onResume()
+        sensorManager.registerListener(
+            shakeDetector,
+            sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+            SensorManager.SENSOR_DELAY_UI
+        )
     }
 
+    override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(shakeDetector)
+    }
+
+
+
+}
 
 @Composable
 private fun FirebaseAuthHandler(
@@ -278,7 +284,6 @@ private fun FirebaseAuthHandler(
     feedViewModelFactory: FeedViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
-    trackReviewViewModelFactory: RandomTrackViewModelFactory,
     selectedTrack: RandomTrack?,
     shouldReviewTrack: Boolean,
     onReviewComplete: () -> Unit
@@ -343,10 +348,10 @@ private fun FirebaseAuthHandler(
                     feedViewModelFactory = feedViewModelFactory,
                     searchViewModelFactory = searchViewModelFactory,
                     profileViewModelFactory = profileViewModelFactory,
-                    trackReviewViewModelFactory = trackReviewViewModelFactory,
                     selectedTrack = selectedTrack,
                     shouldReviewTrack = shouldReviewTrack,
-                    onReviewComplete = onReviewComplete
+                    onReviewComplete = onReviewComplete,
+                    authNavController = authNavController
                 )
             }
         }
@@ -361,11 +366,22 @@ private fun AppEntry(
     feedViewModelFactory: FeedViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
-    trackReviewViewModelFactory: RandomTrackViewModelFactory,
     selectedTrack: RandomTrack?,
     shouldReviewTrack: Boolean,
-    onReviewComplete: () -> Unit
+    onReviewComplete: () -> Unit,
+    authNavController: NavHostController
 ) {
+
+    val authState by authViewModel.userId.collectAsState()
+
+    LaunchedEffect(authState) {
+        if (authState == null) {
+            // Handle logout by navigating back to auth flow
+            authNavController.navigate("auth") {
+                popUpTo("main_app") { inclusive = true }
+            }
+        }
+    }
     // Create main app NavController
     val navController = rememberNavController()
     val reviewViewModelFactory = remember(reviewRepository, authViewModel) {
@@ -380,7 +396,6 @@ private fun AppEntry(
         authViewModel = authViewModel,
         musicRepository = musicRepository,
         reviewRepository = reviewRepository,
-        trackReviewViewModelFactory = trackReviewViewModelFactory,
         selectedTrack = selectedTrack,
         shouldReviewTrack = shouldReviewTrack,
         onReviewComplete = onReviewComplete,
@@ -389,17 +404,15 @@ private fun AppEntry(
 }
 
 
-
-
 @Composable
-        fun PitchAppTheme(content: @Composable () -> Unit) {
-            MaterialTheme(
-                colorScheme = lightColorScheme(
-                    primary = Color(0xFFA3C1D3)
-                ),
-                content = content
-            )
-        }
+fun PitchAppTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = lightColorScheme(
+            primary = Color(0xFFA3C1D3)
+        ),
+        content = content
+    )
+}
 
 
 

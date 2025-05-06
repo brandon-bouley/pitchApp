@@ -34,6 +34,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.pitchapp.data.local.PitchDatabase
 import com.example.pitchapp.data.model.Album
+import com.example.pitchapp.data.model.RandoTrack
 import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.remote.LastFmApi
 import com.example.pitchapp.data.repository.MusicRepository
@@ -56,7 +57,6 @@ import com.example.pitchapp.ui.screens.profile.SignUpScreen
 import com.example.pitchapp.ui.screens.review.AddTrackReviewScreen
 import com.example.pitchapp.viewmodel.AuthViewModel
 import androidx.compose.runtime.collectAsState
-import com.example.pitchapp.viewmodel.TrackReviewViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
@@ -73,18 +73,17 @@ fun MainApp(
     authViewModel: AuthViewModel,
     musicRepository: MusicRepository,
     reviewRepository: ReviewRepository,
-    trackReviewViewModelFactory: RandomTrackViewModelFactory,
     selectedTrack: RandomTrack?,
     shouldReviewTrack: Boolean,
     onReviewComplete: () -> Unit,
     navController: NavHostController
 ) {
     // ViewModel initialization
-    val trackReviewViewModel: TrackReviewViewModel = viewModel(factory = trackReviewViewModelFactory)
     val searchViewModel: SearchViewModel = viewModel(factory = searchViewModelFactory)
     val reviewViewModel: ReviewViewModel = viewModel(factory = reviewViewModelFactory)
     val feedViewModel: FeedViewModel = viewModel(factory = feedViewModelFactory)
     val profileViewModel: ProfileViewModel = viewModel(factory = profileViewModelFactory)
+    val systemDarkTheme = isSystemInDarkTheme()
 
     val userTheme = authViewModel.themePreference.collectAsState().value
     var darkThemeOverride by remember { mutableStateOf<Boolean?>(null) }
@@ -93,8 +92,15 @@ fun MainApp(
 
     LaunchedEffect(shouldReviewTrack, selectedTrack) {
         if (shouldReviewTrack && selectedTrack != null) {
-            trackReviewViewModel.setSelectedTrack(selectedTrack)
-            navController.navigate("add_track_review")
+            reviewViewModel.setSelectedTrack(selectedTrack)
+            val randoTrack = RandoTrack(
+                mbid = selectedTrack.mbid,
+                name = selectedTrack.name,
+                artist = selectedTrack.artist.name
+
+            )
+            searchViewModel.selectTrack(randoTrack)
+            navController.navigate("add_track_review/${randoTrack.id}")
             onReviewComplete()
         }
     }
@@ -216,17 +222,26 @@ fun MainApp(
                     ProfileScreen(
                         navController = navController,
                         viewModel = profileViewModel,
+                        reviewRepository = reviewRepository,
                         authViewModel = authViewModel
                     )
                 }
 
-                composable("add_track_review") {
-                        AddTrackReviewScreen(
-                            navController = navController,
-                            trackReviewViewModel = trackReviewViewModel
-                        )
-                    }
-
+                composable(
+                    route = Screen.AddTrackReview.route,
+                    arguments = listOf(navArgument(Screen.AddTrackReview.ARG_TRACK_ID) {
+                        type = NavType.StringType
+                    })
+                ) {backStack ->
+                    val trackId = backStack.arguments?.getString(Screen.AddTrackReview.ARG_TRACK_ID)
+                        ?: return@composable
+                    AddTrackReviewScreen(
+                        navController = navController,
+                        reviewViewModel = reviewViewModel,
+                        authViewModel = authViewModel,
+                        trackId = trackId
+                    )
+                }
             }
         }
 

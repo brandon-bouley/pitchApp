@@ -77,9 +77,6 @@ fun AddReviewScreen(
         }
     }
 
-    LaunchedEffect(userId) {
-        Log.d("AddReviewScreen", "Current user ID: $userId")
-    }
 
     Scaffold { paddingValues ->
         LazyColumn(

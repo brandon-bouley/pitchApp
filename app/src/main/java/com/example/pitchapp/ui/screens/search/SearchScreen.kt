@@ -266,7 +266,7 @@ fun AlbumDetailContent(
         LazyColumn {
             items(reviews) { review ->
                 ReviewCard(
-                    reviewItem = FeedItem.ReviewItem(review, album),
+                    reviewItem = FeedItem.ReviewItem(review=review, album=album),
                     onClick = {
                         navController.navigate(
                             Screen.Profile.createRoute(review.username))

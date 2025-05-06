@@ -48,7 +48,7 @@ fun ApiAlbum.toDomainAlbum(): Album {
 
 // --- Album mapping for album.getinfo endpoint ---
 fun AlbumDetail.toDomainAlbum(): Album {
-    val primaryImage = image.lastOrNull { it.size == "extralarge" }?.url
+    val primaryImage = image.lastOrNull { it?.size == "extralarge" }?.url
         ?: image.firstOrNull()?.url
         ?: ""
 
@@ -63,6 +63,14 @@ fun AlbumDetail.toDomainAlbum(): Album {
         playCount = playcount?.toIntOrNull() ?: 0,
         tracks = parseTracks(tracks),
         summary = wiki?.summary?.sanitizeWikiText() ?: "No description available"
+    )
+}
+fun RandomTrack.toDomainTrack(): RandoTrack{
+
+    return RandoTrack(
+        id = generateAlbumId(artist.name, name),
+        name = name,
+        artist = artist.name,
     )
 }
 
