@@ -221,7 +221,7 @@ class ReviewViewModel(
                     rating = stars,
                     timestamp = Timestamp.now()
                 )
-                val result = reviewRepository.insertTrackReview(review)
+                val result = reviewRepository.insertReview(review)
                 _submissionResult.value = result
 
                 if (result is Result.Success) {

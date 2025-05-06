@@ -17,22 +17,12 @@ class ReviewRepository {
     private val albumsRef = db.collection("albums")
     private val tracksRef = db.collection("tracks")
 
-    suspend fun insertTrackReview(review: Review): Result<Unit> {
-        return try {
-            val doc = reviewsRef.document()
-            val data = review.copy(id = doc.id).toFirestoreMap()
-            doc.set(data).await()
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e)
-        }
-    }
 
+    //inserts reviews to the database
     suspend fun insertReview(review: Review): Result<Unit> {
         return try {
             val document = reviewsRef.document()
             val data = review.copy(id = document.id).toFirestoreMap()
-
             document.set(data).await()
             Result.Success(Unit)
         } catch (e: Exception) {
@@ -40,6 +30,7 @@ class ReviewRepository {
         }
     }
 
+    //Gets all reviews from the database
     suspend fun getAllReviews(): Result<List<Review>> {
         return try {
             val snapshot = Firebase.firestore.collection("reviews")
@@ -51,6 +42,7 @@ class ReviewRepository {
         }
     }
 
+    //gets the reviews by userId
     suspend fun getReviewsByUser(userId: String): Result<List<Review>> {
         return try {
             val querySnapshot = reviewsRef
@@ -65,6 +57,7 @@ class ReviewRepository {
         }
     }
 
+    //Returns all the reviews for an album
     suspend fun getReviewsForAlbum(albumId: String): Result<List<Review>> {
         return try {
             val querySnapshot = reviewsRef
@@ -78,6 +71,7 @@ class ReviewRepository {
             Result.Error(e)
         }
     }
+    //Returns all the reviews for a Track
     suspend fun getReviewsForTrack(trackId: String): Result<List<Review>> {
         return try {
             val querySnapshot = reviewsRef
@@ -91,7 +85,7 @@ class ReviewRepository {
             Result.Error(e)
         }
     }
-
+//Used in the feed screen to display recent reviews
     suspend fun getRecentReviews(limit: Int = 50): Result<List<Review>> {
         return try {
             val querySnapshot = reviewsRef
@@ -106,6 +100,7 @@ class ReviewRepository {
         }
     }
 
+    //gets the average rating for a track/album
     suspend fun getAverageRating(albumId: String,type: String): Result<Float> {
         return try {
             if(type==="albums"){

@@ -12,12 +12,7 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface LastFmService {
-    @GET(".")
-    suspend fun getTopTracks(
-        @Query("method") method: String = "chart.gettoptracks",
-        @Query("limit") limit: Int = 11
-    ): TopTracksResponse
-    //got rid of Call
+
 
     @GET(".")
     suspend fun searchArtists(
@@ -52,6 +47,14 @@ interface LastFmService {
         @Query("mbid") mbid: String? = null,
         @Query("autocorrect") autocorrect: Int = 1
     ): AlbumInfoResponse
+
+    //Tracks API calls
+    @GET(".")
+    suspend fun getTopTracks(
+        @Query("method") method: String = "chart.gettoptracks",
+        @Query("limit") limit: Int = 11
+    ): TopTracksResponse
+
     @GET(".")
     suspend fun getTrackInfo(
         @Query("method") method: String = "track.getInfo",

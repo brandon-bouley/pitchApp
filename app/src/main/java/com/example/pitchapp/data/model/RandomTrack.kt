@@ -2,6 +2,7 @@ package com.example.pitchapp.data.model
 import com.example.pitchapp.data.model.Album.Track
 import com.google.gson.annotations.SerializedName
 
+// Serialize data models for Random Track
 data class RandoTrack(
     @SerializedName("id")
     var id: String = "",
@@ -12,6 +13,7 @@ data class RandoTrack(
     @SerializedName("artist")
     val artist: String = "",
 )
+
 data class RandomTrack(
     @SerializedName("id")
     val id: String,
@@ -70,9 +72,6 @@ data class TopTracksResponse(
 data class Tracks(
     @SerializedName("track") val track: List<RandomTrack>
 )
-
-
-//endregion
 
 
 
