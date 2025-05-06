@@ -14,7 +14,7 @@ data class Review(
     val timestamp: Timestamp = Timestamp.now(),
     val likes: List<String> = emptyList(), //  user IDs who liked this review
     val likeCount: Int = 0, // Derived field for querying/sorting
-    val albumDetails: Album? = null,
+    var albumDetails: Album? = null,
     val favoriteTrack: String? = null
 ) {
     init {

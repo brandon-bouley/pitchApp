@@ -3,10 +3,12 @@ package com.example.pitchapp.data.model
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.Exclude
+import com.google.firebase.firestore.IgnoreExtraProperties
 
+@IgnoreExtraProperties
 data class Profile(
     @DocumentId val userId: String = "",
-    val displayName: String = "",
+    val username: String = "",
     val email: String? = null,
     val bio: String? = null,
     val followers: List<String> = emptyList(),
@@ -14,16 +16,20 @@ data class Profile(
     val themePreference: String = "light",
     val reviewCount: Int = 0,
     val averageRating: Float = 0f,
-    val createdAt: Timestamp = Timestamp.now(),
+    val createdAt: Timestamp? = null,
+    val updatedAt: Timestamp? = null,
+    val lastUpdated: Timestamp? = null,
     val isPublic: Boolean = true,
-    val recentReviews: List<Review> = emptyList()
+    @get:Exclude val recentReviews: List<Review> = emptyList(),
+    val profilePictureUrl: String? = null
 ) {
-
-
-
-    init {
-        require(averageRating in 0f..5f) {
-            "Average rating must be between 0 and 5"
-        }
-    }
+    // Empty constructor required for Firestore deserialization
+    constructor() : this(
+        userId = "",
+        username = "",
+        email = null,
+        bio = null,
+        followers = emptyList(),
+        following = emptyList()
+    )
 }

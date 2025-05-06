@@ -14,12 +14,17 @@ class AuthViewModel : ViewModel() {
     private val _userId = MutableStateFlow<String?>(null)
     val userId: StateFlow<String?> = _userId
 
+    private val _username = MutableStateFlow<String?>(null)
+    val username: StateFlow<String?> = _username
+
     private val _themePreference = MutableStateFlow("light")
     val themePreference: StateFlow<String> = _themePreference
 
     fun setThemePreference(pref: String) {
         _themePreference.value = pref
     }
+
+
 
     suspend fun login(username: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         try {
@@ -38,6 +43,7 @@ class AuthViewModel : ViewModel() {
             val storedPassword = userDoc.getString("password") ?: ""
             if (storedPassword == password) {
                 _userId.value = userDoc.id
+                fetchUsername(userDoc.id)
                 Log.d("AuthViewModel", "Login successful for user: $username")
                 Log.d("AuthViewModel", "User ID: ${_userId.value}")
                 onSuccess()
@@ -62,7 +68,6 @@ class AuthViewModel : ViewModel() {
                 return
             }
 
-
             val newUserId = UUID.randomUUID().toString()
             val userData = mapOf(
                 "username" to username,
@@ -79,6 +84,8 @@ class AuthViewModel : ViewModel() {
             db.collection("users").document(newUserId).set(userData).await()
 
             _userId.value = newUserId
+            fetchUsername(newUserId)
+            Log.d("AuthViewModel", "Account created successfully for user: $username")
             onSuccess()
         } catch (e: Exception) {
             println("Signup failed inside ViewModel: ${e.message}")
@@ -88,6 +95,14 @@ class AuthViewModel : ViewModel() {
 
     fun logout() {
         _userId.value = null
+    }
+
+    private suspend fun fetchUsername(userId: String) {
+        val doc = FirebaseFirestore.getInstance().collection("users")
+            .document(userId)
+            .get()
+            .await()
+        _username.value = doc.getString("username")
     }
 }
 

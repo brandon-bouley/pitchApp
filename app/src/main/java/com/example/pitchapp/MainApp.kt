@@ -60,6 +60,7 @@ import com.example.pitchapp.viewmodel.TrackReviewViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
+import com.example.pitchapp.ui.screens.profile.UserSearchScreen
 import com.google.android.libraries.places.api.model.kotlin.review
 
 
@@ -83,6 +84,7 @@ fun MainApp(
     val searchViewModel: SearchViewModel = viewModel(factory = searchViewModelFactory)
     val reviewViewModel: ReviewViewModel = viewModel(factory = reviewViewModelFactory)
     val feedViewModel: FeedViewModel = viewModel(factory = feedViewModelFactory)
+    val profileViewModel: ProfileViewModel = viewModel(factory = profileViewModelFactory)
 
     val userTheme = authViewModel.themePreference.collectAsState().value
     var darkThemeOverride by remember { mutableStateOf<Boolean?>(null) }
@@ -99,7 +101,7 @@ fun MainApp(
 
     PitchAppTheme(darkTheme = darkTheme) {
         Scaffold(
-            bottomBar = { BottomNavBar(navController, searchViewModel) },
+            bottomBar = { BottomNavBar(navController, authViewModel) },
             topBar = {
                 LogoHeader(
                     darkTheme = darkTheme,
@@ -191,40 +193,34 @@ fun MainApp(
 
                 }
 
+
+                composable(Screen.UserSearch.route) {
+                    UserSearchScreen(
+                        navController = navController,
+                        viewModel = profileViewModel
+                    )
+                }
+
                 composable(
                     route = Screen.Profile.route,
-                    arguments = listOf(
-                        navArgument(Screen.Profile.ARG_USER_ID) {
-                            type = NavType.StringType
-                            defaultValue = authViewModel.userId.value ?: ""
-                            nullable = true
-                        }
-                    )
+                    arguments = listOf(navArgument("username") { type = NavType.StringType })
                 ) { backStackEntry ->
-                    val userId = backStackEntry.arguments?.getString(Screen.Profile.ARG_USER_ID)
-                        ?: authViewModel.userId.value ?: ""
+                    val username = backStackEntry.arguments?.getString("username")
+                        ?: authViewModel.username.collectAsState().value ?: ""
 
-                    val profileVm = viewModel<ProfileViewModel>(
-                        factory = profileViewModelFactory,
-                        key = "profile_$userId"  // Keep unique key
-                    )
-
-                    LaunchedEffect(profileVm, userId) {
-                        if (userId.isNotEmpty()) {
-                            profileVm.loadProfile(userId)
-                        }
+                    // Load profile by username
+                    LaunchedEffect(username) {
+                        profileViewModel.loadProfileByUsername(username)
                     }
 
                     ProfileScreen(
                         navController = navController,
-                        viewModel = profileVm,
-                        userId = userId,
-                        authViewModel = authViewModel,
-                        onThemeChanged = { darkThemeOverride = null }
+                        viewModel = profileViewModel,
+                        authViewModel = authViewModel
                     )
                 }
 
-                    composable("add_track_review") {
+                composable("add_track_review") {
                         AddTrackReviewScreen(
                             navController = navController,
                             trackReviewViewModel = trackReviewViewModel

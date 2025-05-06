@@ -68,9 +68,8 @@ fun SignUpScreen(
                             onSuccess = {
                                 isLoading = false
                                 println("Signup successful! Navigating to Feed")
-                                navController.navigate(Screen.Feed.route) {
-                                    popUpTo(0) { inclusive = true }
-                                    launchSingleTop = true
+                                navController.navigate("main_app") {
+                                    popUpTo("auth") { inclusive = true }
                                 }
                             },
                             onFailure = { error ->
