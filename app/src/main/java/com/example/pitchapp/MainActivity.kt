@@ -1,4 +1,5 @@
 package com.example.pitchapp
+import android.hardware.Sensor
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -257,7 +258,21 @@ class MainActivity : ComponentActivity() {
                     onReviewComplete = { shouldReviewTrack = false }
                 )
             }
+
         }
+    }
+    override fun onResume(){
+        super.onResume()
+        sensorManager.registerListener(
+            shakeDetector,
+            sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+            SensorManager.SENSOR_DELAY_UI
+        )
+    }
+
+    override fun onPause(){
+        super.onPause()
+        sensorManager.unregisterListener(shakeDetector)
     }
 }
 

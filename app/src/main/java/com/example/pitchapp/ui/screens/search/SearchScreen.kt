@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.FeedItem
 import com.example.pitchapp.data.model.Review
+import com.example.pitchapp.data.model.UserSummary
 import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.ui.components.AlbumCard
 import com.example.pitchapp.ui.components.ReviewCard
@@ -58,6 +59,7 @@ import com.example.pitchapp.viewmodel.ReviewViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.clickable
 import androidx.navigation.compose.*
 
 
@@ -147,7 +149,8 @@ private fun SearchContent(
                 viewModel.updateSearchQuery(query)
                 if (searchState.searchType == SearchViewModel.SearchType.USER) {
                     viewModel.searchUsers(query)
-                } },
+                }
+            },
             searchType = searchState.searchType,
             viewModel = viewModel
         )
@@ -174,12 +177,22 @@ private fun SearchContent(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                SearchViewModel.SearchType.USER -> UserSearchResults(
-                    users = viewModel.userResults.collectAsState().value,
-                    onUserClick = navigateToUserProfile
-                )
+                SearchViewModel.SearchType.USER -> {
+                    LazyColumn {
+                        items(searchState.results.filterIsInstance<UserSummary>()) { user ->
+                            ListItem(
+                                headlineContent = { Text(user.username) },
+                                modifier = Modifier
+                                    .clickable { navigateToUserProfile(user.uid) }
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
+
     }
 }
 

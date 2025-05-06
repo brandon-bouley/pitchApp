@@ -24,7 +24,7 @@ fun UserList(
         LazyColumn {
             items(users) { user ->
                 Text(
-                    text = user.displayName,
+                    text = user.username,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onUserClick(user.uid) }

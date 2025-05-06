@@ -123,8 +123,8 @@ class ProfileViewModel(
             userIds.forEach { uid ->
                 val doc = db.collection("users").document(uid).get().await()
                 doc?.let {
-                    val displayName = it.getString("displayName") ?: "Unknown"
-                    users.add(UserSummary(uid, displayName))
+                    val username = it.getString("username") ?: "Unknown"
+                    users.add(UserSummary(uid, username))
                 }
             }
             onResult(users)

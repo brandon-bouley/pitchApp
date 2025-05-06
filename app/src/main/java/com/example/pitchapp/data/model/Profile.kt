@@ -6,7 +6,7 @@ import com.google.firebase.firestore.Exclude
 
 data class Profile(
     @DocumentId val userId: String = "",
-    val displayName: String = "",
+    val username: String = "",
     val email: String? = null,
     val bio: String? = null,
     val followers: List<String> = emptyList(),

@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.example.pitchapp.data.model.Result
+
 import com.example.pitchapp.data.model.Profile
 import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.data.model.UserSummary
@@ -27,7 +28,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
-
 
 
 class SearchViewModel(
@@ -53,9 +53,6 @@ class SearchViewModel(
 
     private var searchJob: Job? = null
 
-    //search users
-    private val _userResults = MutableStateFlow<List<UserSummary>>(emptyList())
-    val userResults: StateFlow<List<UserSummary>> = _userResults
 
     fun updateSearchQuery(query: String) {
         _searchState.update { it.copy(searchQuery = query) }
@@ -77,25 +74,39 @@ class SearchViewModel(
 
     fun searchUsers(query: String) {
         viewModelScope.launch {
+            _searchState.update { it.copy(isLoading = true, error = null) }
             try {
                 val snapshot = FirebaseFirestore.getInstance()
                     .collection("users")
-                    .whereGreaterThanOrEqualTo("displayName", query)
-                    .whereLessThanOrEqualTo("displayName", query + '\uf8ff')
+                    .whereGreaterThanOrEqualTo("username", query)
+                    .limit(10)
                     .get()
                     .await()
 
                 val users = snapshot.documents.mapNotNull { doc ->
-                    val profile = doc.toObject(Profile::class.java) ?: return@mapNotNull null
-                    UserSummary(profile.userId, profile.displayName)
+                    val username = doc.getString("username") ?: return@mapNotNull null
+                    UserSummary(doc.id, username)
                 }
+                val newResults = mutableListOf<SearchResultItem>()
+                newResults.addAll(users)
 
-                _userResults.value = users
+                Log.d("SearchViewModel", "Queried users: $users")
+                _searchState.update {
+                    it.copy(
+                        results = newResults,
+                        isLoading = false,
+                    )
+                }
+                Log.d("SearchViewModel", "Search returned ${users.size} users")
             } catch (e: Exception) {
-                _searchState.value = _searchState.value.copy(error = e.message)
-            } finally {
-                _searchState.value = _searchState.value.copy(isLoading = false)
+                _searchState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "User search failed: ${e.localizedMessage}"
+                    )
+                }
             }
+            Log.d("SearchViewModel", "Updated searchState.results: ${_searchState.value.results}")
         }
     }
 
@@ -269,6 +280,9 @@ class SearchViewModel(
             }
         }
     }
+    sealed interface SearchResultItem
+    data class UserSummary(val uid: String, val username: String): SearchResultItem
+
 
 
     data class SearchState(
@@ -293,4 +307,6 @@ class SearchViewModel(
         _isAlbumSelected.value = false
     }
 }
+
+
 

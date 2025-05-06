@@ -103,7 +103,7 @@ fun ProfileScreen(
                         .fillMaxSize()
                         .padding(24.dp)
                 ) {
-                    Text(profile.displayName, style = MaterialTheme.typography.headlineMedium)
+                    Text(profile.username, style = MaterialTheme.typography.headlineMedium)
                     Text("Joined in: ${formatTimestamp(profile.createdAt)}")
                     UserList(title = "Followers", users = followers) { uid ->
                         navController.navigate("profile/$uid")

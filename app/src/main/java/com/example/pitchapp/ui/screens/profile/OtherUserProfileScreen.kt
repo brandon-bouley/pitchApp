@@ -44,7 +44,7 @@ fun OtherUserProfileScreen(
             val profile = state.profile
             val isFollowing = profile.followers.contains(currentUserId)
             Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-                Text(profile.displayName, style = MaterialTheme.typography.headlineMedium)
+                Text(profile.username, style = MaterialTheme.typography.headlineMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Bio: ${profile.bio ?: "No bio set."}")
                 Text("Joined in: ${formatTimestamp(profile.createdAt)}")
