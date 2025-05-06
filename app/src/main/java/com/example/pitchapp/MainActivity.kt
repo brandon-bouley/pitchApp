@@ -167,19 +167,15 @@ class MainActivity : ComponentActivity() {
         shakeDetector = ShakeDetector { onShake() }
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
-
-
-
         setContent {
             var showDialog by remember { mutableStateOf(false) }
             var selectedTrack by remember { mutableStateOf<RandomTrack?>(null) }
             var shouldReviewTrack by remember { mutableStateOf(false) }
 
-
-
             onShake = {
                 CoroutineScope(Dispatchers.Main).launch {
                     val tracks = musicRepository.getTopTracks()
+                    Log.d("TRACK DEBUG","$tracks")
                     if (tracks.isNotEmpty()) {
                         val randomTrack = tracks[Random.nextInt(tracks.size)]
                        selectedTrack = randomTrack
@@ -188,7 +184,10 @@ class MainActivity : ComponentActivity() {
                 }
 
             }
+            Log.d("SHOW DIALOGUE","MAYBE THIS IS WHATS MESSED UP")
+
             if (showDialog) {
+
                 AlertDialog(
                     onDismissRequest = { showDialog = false },
                     title = { Text("Random Track 🎵") },
@@ -209,7 +208,7 @@ class MainActivity : ComponentActivity() {
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "🔊 Playcount: ${selectedTrack?.playcount}",
+                                text = "🔊 Playcount: ${selectedTrack?.playCount}",
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(
@@ -259,9 +258,11 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-        }
-    }
 
+        }
+
+
+    }
     override fun onResume() {
         super.onResume()
         sensorManager.registerListener(
@@ -276,6 +277,8 @@ class MainActivity : ComponentActivity() {
         sensorManager.unregisterListener(shakeDetector)
     }
 
+
+
 }
 
 @Composable
@@ -289,16 +292,12 @@ private fun FirebaseAuthHandler(
     selectedTrack: RandomTrack?,
     shouldReviewTrack: Boolean,
     onReviewComplete: () -> Unit
-
-
 ) {
     val authViewModel: AuthViewModel = viewModel()
-
     val reviewViewModelFactory = ReviewViewModelFactory(
         reviewRepository = reviewRepository,
         authViewModel = authViewModel
     )
-
     MainApp(
         feedViewModelFactory = feedViewModelFactory,
         searchViewModelFactory = searchViewModelFactory,

@@ -6,7 +6,8 @@ import com.google.firebase.firestore.Exclude
 
 data class Review(
     @DocumentId val id: String = "",
-    val albumId: String,
+    val albumId: String?=null,
+    val trackId: String?=null,
     val userId: String,
     val username: String,
     val content: String,
@@ -14,6 +15,7 @@ data class Review(
     val timestamp: Timestamp = Timestamp.now(),
     val likes: List<String> = emptyList(), //  user IDs who liked this review
     val likeCount: Int = 0, // Derived field for querying/sorting
+
 
     @Exclude
     val albumDetails: Album? = null
@@ -25,13 +27,13 @@ data class Review(
 
     // Firestore serialization helper
     fun toFirestoreMap(): Map<String, Any> = mapOf(
-        "albumId" to albumId,
+        "albumId" to (albumId ?: trackId ?: throw IllegalStateException("Both albumId and trackId are null")),
         "userId" to userId,
         "username" to username,
         "content" to content,
         "rating" to rating,
         "timestamp" to timestamp,
         "likes" to likes,
-        "likeCount" to likes.size
+        "likeCount" to likes.size,
     )
 }

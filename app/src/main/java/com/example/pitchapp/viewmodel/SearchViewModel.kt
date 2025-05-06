@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Artist
+import com.example.pitchapp.data.model.RandoTrack
 import com.example.pitchapp.data.model.Review
 import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ReviewRepository
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.example.pitchapp.data.model.Result
+import com.example.pitchapp.data.repository.MusicRepository.Companion.generateAlbumId
 import com.example.pitchapp.ui.navigation.Screen
 
 class SearchViewModel(
@@ -29,9 +31,10 @@ class SearchViewModel(
     // State management
     private val _searchState = MutableStateFlow(SearchState())
     val searchState: StateFlow<SearchState> = _searchState.asStateFlow()
-
     private val _selectedAlbum = MutableStateFlow<Album?>(null)
     val selectedAlbum: StateFlow<Album?> = _selectedAlbum.asStateFlow()
+    private val _selectedTrack = MutableStateFlow<RandoTrack?>(null)
+    val selectedTrack: StateFlow<RandoTrack?> = _selectedTrack.asStateFlow()
 
     private val _selectedArtist = MutableStateFlow<Artist?>(null)
     val selectedArtist: StateFlow<Artist?> = _selectedArtist.asStateFlow()
@@ -41,6 +44,8 @@ class SearchViewModel(
 
     private val _isAlbumSelected = MutableStateFlow(false)
     val isAlbumSelected: StateFlow<Boolean> = _isAlbumSelected.asStateFlow()
+    private val _isTrackSelected = MutableStateFlow(false)
+    val isTrackSelected: StateFlow<Boolean> = _isAlbumSelected.asStateFlow()
 
     private var searchJob: Job? = null
 
@@ -168,6 +173,25 @@ class SearchViewModel(
             }
         }
     }
+    fun selectTrack(track: RandoTrack) {
+        viewModelScope.launch {
+            _selectedTrack.value = null
+            _isTrackSelected.value = false // Reset while loading
+
+            when (val result = musicRepository.getOrFetchTrack(track.artist,track.name)) {
+                is Result.Success -> {
+                    _selectedTrack.value = result.data
+                    _isTrackSelected.value = true
+                    loadTrackDetails(result.data.id)
+                }
+                is Result.Error -> {
+                    _searchState.update { it.copy(error = result.exception.message) }
+                    _isTrackSelected.value = false
+                }
+                else -> Result.Error(IllegalStateException("Unexpected result type"))
+            }
+        }
+    }
 
 
     fun loadAlbumDetails(albumId: String) {
@@ -194,6 +218,51 @@ class SearchViewModel(
                     else -> {
                         val error = listOfNotNull(
                             (albumResult as? Result.Error)?.exception?.message,
+                            (reviewsResult as? Result.Error)?.exception?.message
+                        ).joinToString()
+
+                        _searchState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = "Failed to load details: ${error.ifEmpty { "Unknown error" }}"
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                _searchState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Failed to load details: ${e.localizedMessage}"
+                    )
+                }
+            }
+        }
+    }
+    fun loadTrackDetails(trackId: String) {
+        viewModelScope.launch {
+            _searchState.update { it.copy(isLoading = true, error = null) }
+            println("trackId: $trackId")
+
+            try {
+                // Get track details from Firestore
+                val trackResult = musicRepository.getTrackFromFirestore(trackId)
+                // Get reviews from Firestore
+                val reviewsResult = reviewRepository.getReviewsForTrack(trackId)
+
+                when {
+                    trackResult is Result.Success && reviewsResult is Result.Success -> {
+                        _selectedTrack.value = trackResult.data
+                        _searchState.update {
+                            it.copy(
+                                selectedTrackDetails = trackResult.data to reviewsResult.data,
+                                isLoading = false
+                            )
+                        }
+                    }
+                    else -> {
+                        val error = listOfNotNull(
+                            (trackResult as? Result.Error)?.exception?.message,
                             (reviewsResult as? Result.Error)?.exception?.message
                         ).joinToString()
 
@@ -249,6 +318,7 @@ class SearchViewModel(
         val searchQuery: String = "",
         val results: List<Any> = emptyList(),
         val selectedAlbumDetails: Pair<Album, List<Review>>? = null,
+        val selectedTrackDetails: Pair<RandoTrack, List<Review>>? = null,
         val isLoading: Boolean = false,
         val error: String? = null,
         val searchType: SearchType = SearchType.ARTIST
@@ -265,6 +335,8 @@ class SearchViewModel(
         _artistAlbums.value = emptyList()
         _searchState.value = SearchState()
         _isAlbumSelected.value = false
+        _isTrackSelected.value = false
+        _selectedTrack.value = null
     }
 
 }

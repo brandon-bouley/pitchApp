@@ -6,11 +6,14 @@ import com.example.pitchapp.data.model.ApiAlbum
 import com.example.pitchapp.data.model.ApiAlbumSimple
 import com.example.pitchapp.data.model.ApiArtist
 import com.example.pitchapp.data.model.Artist
+import com.example.pitchapp.data.model.RandoTrack
 import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.remote.LastFmService
 import com.example.pitchapp.data.model.toDomainAlbum
 import com.example.pitchapp.data.model.toDomainArtist
 import com.example.pitchapp.data.model.Result
+
+import com.example.pitchapp.data.model.toDomainTrack
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
@@ -36,6 +39,7 @@ class MusicRepository @Inject constructor(
 
     private val db = Firebase.firestore("newpitchdb")
     private val albumsRef = db.collection("albums")
+    private val tracksRef = db.collection("tracks")
 
    suspend fun getTopTracks(limit: Int = 11): List<RandomTrack> {
         return try {
@@ -43,7 +47,7 @@ class MusicRepository @Inject constructor(
                 method="chart.gettoptracks",
                 limit=limit
             )
-            response.tracks.track // assuming TopTracksResponse has a 'tracks' field containing a list of tracks
+            response.tracks.track// assuming TopTracksResponse has a 'tracks' field containing a list of tracks
         } catch (e: Exception) {
             Log.e("MusicRepository", "Fetching top tracks failed", e)
             emptyList()
@@ -62,6 +66,22 @@ class MusicRepository @Inject constructor(
                 Result.Success(snapshot.toObject(Album::class.java)!!)
             } else {
                 Result.Error(Exception("Album not found"))
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+    suspend fun getTrackFromFirestore(trackId: String): Result<RandoTrack> {
+        return try {
+            val snapshot = db.collection("tracks")
+                .document(trackId)
+                .get()
+                .await()
+
+            if (snapshot.exists()) {
+                Result.Success(snapshot.toObject(RandoTrack::class.java)!!)
+            } else {
+                Result.Error(Exception("Track not found"))
             }
         } catch (e: Exception) {
             Result.Error(e)
@@ -203,6 +223,76 @@ class MusicRepository @Inject constructor(
             }
         }
     }
+
+
+    suspend fun getOrFetchTrack(artist: String, name: String): Result<RandoTrack> {
+        val trackId = generateAlbumId(artist, name)
+        Log.d("IN GET TRACK", "trackId: $trackId")
+        return when (val existing = getTrackFromFirestore(trackId)) {
+            is Result.Success -> existing
+            else -> {
+                when (val apiResult = getTrackInfo(artist, name)) {
+                    is Result.Success -> {
+                        val rawTrack = apiResult.data
+                        if (rawTrack.name.isBlank() || rawTrack.artist.isBlank()) {
+                            return Result.Error(Exception("Invalid API album data"))
+                        }
+
+                        val track = rawTrack.copy(id = trackId)
+
+                        // 3. Handle save result properly
+                        when (val saveResult = saveTrackToFirestore(track)) {
+                            is Result.Success -> Result.Success(track)
+                            is Result.Error -> Result.Error(
+                                Exception("API data loaded but Firestore save failed: ${saveResult.exception}")
+                            )
+                        }
+                    }
+
+                    is Result.Error -> apiResult
+                }
+            }
+
+
+        }
+    }
+    suspend fun getTrackInfo(
+        artist: String? = null,
+        track:  String? = null,
+        mbid:    String? = null
+    ): Result<RandoTrack> =
+        try {
+            require(artist != null || mbid != null) {
+                "Must provide either artist+album or MBID"
+            }
+
+            val resp = lastFmService.getTrackInfo(
+                method    = "track.getinfo",
+                artist    = artist ?: "",
+                track     = track  ?: "",
+                mbid      = mbid
+            )
+
+            // resp.album: AlbumDetail
+            val domain = resp.track.toDomainTrack()
+            Result.Success(domain)
+        } catch (e: Exception) {
+            Log.e("MusicRepository", "Track details fetch failed", e)
+            Result.Error(e)
+        }
+    private suspend fun saveTrackToFirestore(track: RandoTrack): Result<Unit> {
+        Log.d("Track id before save","trackId before save: ${track.id}")
+        return try {
+            db.collection("tracks")
+                .document(track.id)
+                .set(track)
+                .await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
 
 
 

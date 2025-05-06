@@ -47,7 +47,7 @@ fun RandomTrackCard(trackItem: FeedItem.TrackItem) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "🔊 Playcount: ${trackItem.track.playcount}",
+                text = "🔊 Playcount: ${trackItem.track.playCount}",
                 style = MaterialTheme.typography.bodySmall
             )
             Text(

@@ -43,7 +43,7 @@ class FeedRepository(
         coroutineScope {
             groupedReviews.forEach { (albumId, reviews) ->
                 launch {
-                    when (val albumResult = musicRepository.getAlbumFromFirestore(albumId)) {
+                    when (val albumResult = musicRepository.getAlbumFromFirestore(albumId!!)) {
                         is Result.Success -> {
                             albumMap[albumId] = Pair(albumResult.data, reviews)
                         }
@@ -83,7 +83,7 @@ class FeedRepository(
         reviews: List<Review>
     ): List<FeedItem.ReviewItem> {
         return reviews.map { review ->
-            val album = when (val result = musicRepository.getAlbumFromFirestore(review.albumId)) {
+            val album = when (val result = musicRepository.getAlbumFromFirestore(review.albumId!!)) {
                 is Result.Success -> result.data
                 is Result.Error -> {
                     Log.w("FEED_REPO", "Missing album ${review.albumId}", result.exception)

@@ -34,6 +34,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.pitchapp.data.local.PitchDatabase
 import com.example.pitchapp.data.model.Album
+import com.example.pitchapp.data.model.RandoTrack
 import com.example.pitchapp.data.model.RandomTrack
 import com.example.pitchapp.data.remote.LastFmApi
 import com.example.pitchapp.data.repository.MusicRepository
@@ -74,14 +75,24 @@ fun MainApp(
     onReviewComplete: () -> Unit
 ) {
     val navController = rememberNavController()
-    val trackReviewViewModel: TrackReviewViewModel = viewModel(factory = trackReviewViewModelFactory)
+    val reviewViewModel = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
+    val searchViewModel = viewModel<SearchViewModel>(factory = searchViewModelFactory)
     val systemDarkTheme = isSystemInDarkTheme()
     var darkTheme by remember { mutableStateOf(systemDarkTheme) }
 
     LaunchedEffect(shouldReviewTrack, selectedTrack) {
         if (shouldReviewTrack && selectedTrack != null) {
-            trackReviewViewModel.setSelectedTrack(selectedTrack)
-            navController.navigate("add_track_review")
+            reviewViewModel.setSelectedTrack(selectedTrack)
+            val randoTrack = RandoTrack(
+                id = "",
+                mbid = selectedTrack.mbid,
+                name = selectedTrack.name,
+                artist = selectedTrack.artist.name
+
+            )
+            searchViewModel.selectTrack(randoTrack)
+            Log.d("Select Track","randoTrack: $randoTrack")
+            navController.navigate("add_track_review/${randoTrack.id}")
             onReviewComplete()
         }
     }
@@ -156,7 +167,6 @@ fun MainApp(
                         )
                     )
 
-                    val reviewViewModel = viewModel<ReviewViewModel>(factory = reviewViewModelFactory)
 
                     AlbumDetailScreen(
                         albumId = albumId,
@@ -211,10 +221,20 @@ fun MainApp(
                     )
                 }
 
-                composable("add_track_review") {
+                composable(
+                    route = Screen.AddTrackReview.route,
+                    arguments = listOf(navArgument(Screen.AddTrackReview.ARG_TRACK_ID) {
+                        type = NavType.StringType
+                    })
+                ) {backStack ->
+                    val trackId = backStack.arguments?.getString(Screen.AddTrackReview.ARG_TRACK_ID)
+                        ?: return@composable
+                    Log.d("TRACK ID","trackid: $trackId")
                     AddTrackReviewScreen(
                         navController = navController,
-                        trackReviewViewModel = trackReviewViewModel
+                        reviewViewModel = reviewViewModel,
+                        authViewModel = authViewModel,
+                        trackId = trackId
                     )
                 }
             }

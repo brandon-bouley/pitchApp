@@ -14,6 +14,18 @@ class ReviewRepository {
     private val db = Firebase.firestore
     private val reviewsRef = db.collection("reviews")
     private val albumsRef = db.collection("albums")
+    private val tracksRef = db.collection("tracks")
+
+    suspend fun insertTrackReview(review: Review): Result<Unit> {
+        return try {
+            val doc = reviewsRef.document()
+            val data = review.copy(id = doc.id).toFirestoreMap()
+            doc.set(data).await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
 
     suspend fun insertReview(review: Review): Result<Unit> {
         return try {
@@ -66,6 +78,19 @@ class ReviewRepository {
             Result.Error(e)
         }
     }
+    suspend fun getReviewsForTrack(trackId: String): Result<List<Review>> {
+        return try {
+            val querySnapshot = reviewsRef
+                .whereEqualTo("trackId", trackId)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .await()
+
+            Result.Success(querySnapshot.toReviews())
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
 
     suspend fun getRecentReviews(limit: Int = 50): Result<List<Review>> {
         return try {
@@ -81,11 +106,19 @@ class ReviewRepository {
         }
     }
 
-    suspend fun getAverageRating(albumId: String): Result<Float> {
+    suspend fun getAverageRating(albumId: String,type: String): Result<Float> {
         return try {
-            val albumSnapshot = albumsRef.document(albumId).get().await()
-            val averageRating = albumSnapshot.getDouble("averageRating")?.toFloat() ?: 0f
-            Result.Success(averageRating)
+            if(type==="albums"){
+                val albumSnapshot = albumsRef.document(albumId).get().await()
+                val averageRating = albumSnapshot.getDouble("averageRating")?.toFloat() ?: 0f
+                Result.Success(averageRating)
+
+            }else{
+                val albumSnapshot = tracksRef.document(albumId).get().await()
+                val averageRating = albumSnapshot.getDouble("averageRating")?.toFloat() ?: 0f
+                Result.Success(averageRating)
+            }
+
         } catch (e: Exception) {
             Result.Error(e)
         }

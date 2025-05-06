@@ -65,6 +65,14 @@ fun AlbumDetail.toDomainAlbum(): Album {
         summary = wiki?.summary?.sanitizeWikiText() ?: "No description available"
     )
 }
+fun RandomTrack.toDomainTrack(): RandoTrack{
+
+    return RandoTrack(
+        id = generateAlbumId(artist.name, name),
+        name = name,
+        artist = artist.name,
+    )
+}
 
 // Helper extensions
 private fun List<Image>.getLargestImageUrl(): String {
