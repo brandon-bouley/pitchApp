@@ -17,34 +17,42 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.floor
 
 @Composable
-fun RatingDisplay(rating: Float, modifier: Modifier = Modifier) {
+fun RatingDisplay(
+    rating: Float,
+    modifier: Modifier = Modifier,
+) {
+    val starSize = 32
+    val filledColor = MaterialTheme.colorScheme.onPrimary
+    val emptyColor = MaterialTheme.colorScheme.outline
     val filledStars = floor(rating).toInt()
     val halfStar = rating - filledStars >= 0.5f
 
     Row(modifier = modifier) {
         repeat(filledStars) {
-            StarIcon()
+            StarIcon(filled = true, size = starSize, color = filledColor)
         }
         if (halfStar) {
-            HalfStarIcon()
+            HalfStarIcon(size = starSize, filledColor = filledColor, outlineColor = emptyColor)
         }
-        repeat(5 - filledStars - (if (halfStar) 1 else 0)) {
-            StarIcon(filled = false)
+        repeat(5 - filledStars - if (halfStar) 1 else 0) {
+            StarIcon(filled = false, size = starSize, color = emptyColor)
         }
-        Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(8.dp))
         Text(
             text = "%.1f".format(rating),
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary
         )
     }
 }
 
 @Composable
-private fun StarIcon(filled: Boolean = true) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val outlineColor = MaterialTheme.colorScheme.outline
-    Canvas(modifier = Modifier.size(20.dp)) {
+private fun StarIcon(
+    filled: Boolean,
+    size: Int,
+    color: androidx.compose.ui.graphics.Color
+) {
+    Canvas(modifier = Modifier.size(size.dp)) {
         val path = Path().apply {
             moveTo(12f, 2f)
             lineTo(15.09f, 8.26f)
@@ -62,17 +70,18 @@ private fun StarIcon(filled: Boolean = true) {
 
         drawPath(
             path = path,
-            color = if (filled) primaryColor
-            else outlineColor
+            color = color
         )
     }
 }
 
 @Composable
-private fun HalfStarIcon() {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val outlineColor = MaterialTheme.colorScheme.outline
-    Canvas(modifier = Modifier.size(20.dp)) {
+private fun HalfStarIcon(
+    size: Int,
+    filledColor: androidx.compose.ui.graphics.Color,
+    outlineColor: androidx.compose.ui.graphics.Color
+) {
+    Canvas(modifier = Modifier.size(size.dp)) {
         val starPath = Path().apply {
             moveTo(12f, 2f)
             lineTo(15.09f, 8.26f)
@@ -88,16 +97,13 @@ private fun HalfStarIcon() {
             close()
         }
 
-        // Draw filled left half
-        clipPath(path = starPath) {
+        clipPath(starPath) {
             drawRect(
-                color = primaryColor,
+                color = filledColor,
                 topLeft = Offset.Zero,
-                size = size.copy(width = size.width / 2)
+                size = androidx.compose.ui.geometry.Size(this.size.width / 2, this.size.height)
             )
         }
-
-        // Draw outline
         drawPath(
             path = starPath,
             color = outlineColor,

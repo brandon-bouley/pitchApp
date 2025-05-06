@@ -36,14 +36,6 @@ interface LastFmService {
         @Query("limit") limit: Int = 50
     ): ArtistTopAlbumsResponse
 
-//    @GET(".")
-//    suspend fun getArtistInfo(
-//        @Query("method") method: String = "artist.getInfo",
-//        @Query("artist") artist: String,
-//        @Query("mbid") mbid: String? = null,
-//        @Query("autocorrect") autocorrect: Int = 1
-//    ): ArtistInfoResponse
-
     @GET(".")
     suspend fun searchAlbums(
         @Query("method") method: String = "album.search",

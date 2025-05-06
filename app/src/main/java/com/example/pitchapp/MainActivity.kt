@@ -21,7 +21,6 @@ import com.example.pitchapp.data.repository.FeedRepository
 import com.example.pitchapp.data.repository.MusicRepository
 import com.example.pitchapp.data.repository.ProfileRepository
 import com.example.pitchapp.data.repository.ReviewRepository
-import com.example.pitchapp.data.repository.TrackReviewRepository
 import android.hardware.SensorManager
 import com.example.pitchapp.viewmodel.AlbumDetailViewModel
 import com.example.pitchapp.viewmodel.AuthViewModel
@@ -29,7 +28,7 @@ import com.example.pitchapp.viewmodel.FeedViewModel
 import com.example.pitchapp.viewmodel.ProfileViewModel
 import com.example.pitchapp.viewmodel.ReviewViewModel
 import com.example.pitchapp.viewmodel.SearchViewModel
-import com.example.pitchapp.viewmodel.TrackReviewViewModel
+
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
@@ -61,19 +60,7 @@ class ProfileViewModelFactory(
     }
 }
 
-class RandomTrackViewModelFactory(
-    private val repository: TrackReviewRepository
-):  ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(
-        modelClass: Class<T>,
-        extras: CreationExtras
-    ): T {
-        return TrackReviewViewModel(
-            repository = repository,
-        ) as T
-    }
-}
+
 
 // FeedViewModelFactory
 class FeedViewModelFactory(
@@ -142,11 +129,13 @@ class MainActivity : ComponentActivity() {
     private lateinit var onShake: () -> Unit
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d("ON CREATE","hi")
         super.onCreate(savedInstanceState)
         // Dependency setup
         val api = LastFmApi.service
         val musicRepository = MusicRepository(api)
+
+        FirebaseFirestore.getInstance().enableNetwork()
+
 
         // Repository initialization
         val reviewRepository = ReviewRepository()
@@ -155,8 +144,6 @@ class MainActivity : ComponentActivity() {
             musicRepository = musicRepository,
         )
         val profileRepository = ProfileRepository()
-        val trackReviewRepository = TrackReviewRepository()
-        val trackViewModelFactory = RandomTrackViewModelFactory(trackReviewRepository)
 
         // ViewModel factories
 
@@ -175,7 +162,6 @@ class MainActivity : ComponentActivity() {
             onShake = {
                 CoroutineScope(Dispatchers.Main).launch {
                     val tracks = musicRepository.getTopTracks()
-                    Log.d("TRACK DEBUG","$tracks")
                     if (tracks.isNotEmpty()) {
                         val randomTrack = tracks[Random.nextInt(tracks.size)]
                        selectedTrack = randomTrack
@@ -184,7 +170,6 @@ class MainActivity : ComponentActivity() {
                 }
 
             }
-            Log.d("SHOW DIALOGUE","MAYBE THIS IS WHATS MESSED UP")
 
             if (showDialog) {
 
@@ -251,7 +236,6 @@ class MainActivity : ComponentActivity() {
                     feedViewModelFactory = feedViewModelFactory,
                     searchViewModelFactory = searchViewModelFactory,
                     profileViewModelFactory = profileViewModelFactory,
-                    trackReviewViewModelFactory = trackViewModelFactory,
                     selectedTrack = selectedTrack,
                     shouldReviewTrack = shouldReviewTrack,
                     onReviewComplete = { shouldReviewTrack = false }
@@ -288,7 +272,6 @@ private fun FirebaseAuthHandler(
     feedViewModelFactory: FeedViewModelFactory,
     searchViewModelFactory: SearchViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
-    trackReviewViewModelFactory: RandomTrackViewModelFactory,
     selectedTrack: RandomTrack?,
     shouldReviewTrack: Boolean,
     onReviewComplete: () -> Unit
@@ -303,7 +286,6 @@ private fun FirebaseAuthHandler(
         searchViewModelFactory = searchViewModelFactory,
         profileViewModelFactory = profileViewModelFactory,
         reviewViewModelFactory = reviewViewModelFactory,
-        trackReviewViewModelFactory = trackReviewViewModelFactory,
         selectedTrack = selectedTrack,
         shouldReviewTrack = shouldReviewTrack,
         onReviewComplete = onReviewComplete,

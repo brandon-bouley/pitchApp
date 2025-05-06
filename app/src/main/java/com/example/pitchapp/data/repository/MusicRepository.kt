@@ -37,7 +37,7 @@ class MusicRepository @Inject constructor(
         }
     }
 
-    private val db = Firebase.firestore("newpitchdb")
+    private val db = Firebase.firestore
     private val albumsRef = db.collection("albums")
     private val tracksRef = db.collection("tracks")
 
@@ -227,7 +227,6 @@ class MusicRepository @Inject constructor(
 
     suspend fun getOrFetchTrack(artist: String, name: String): Result<RandoTrack> {
         val trackId = generateAlbumId(artist, name)
-        Log.d("IN GET TRACK", "trackId: $trackId")
         return when (val existing = getTrackFromFirestore(trackId)) {
             is Result.Success -> existing
             else -> {
@@ -277,11 +276,9 @@ class MusicRepository @Inject constructor(
             val domain = resp.track.toDomainTrack()
             Result.Success(domain)
         } catch (e: Exception) {
-            Log.e("MusicRepository", "Track details fetch failed", e)
             Result.Error(e)
         }
     private suspend fun saveTrackToFirestore(track: RandoTrack): Result<Unit> {
-        Log.d("Track id before save","trackId before save: ${track.id}")
         return try {
             db.collection("tracks")
                 .document(track.id)

@@ -22,7 +22,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.pitchapp.ui.navigation.Screen
-import com.example.pitchapp.viewmodel.TrackReviewViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.example.pitchapp.data.model.Result
@@ -45,7 +44,6 @@ fun AddTrackReviewScreen(
     val rating by reviewViewModel.rating.collectAsState()
     val submissionResult by reviewViewModel.submissionResult.collectAsState()
     val userId by authViewModel.userId.collectAsState()
-    Log.d("add track review","in add track review")
 
 
     Scaffold { padding ->
@@ -87,7 +85,6 @@ fun AddTrackReviewScreen(
             Button(
                 onClick = {
                     reviewViewModel.submitTrackReview {
-                        Log.d("Track Id in Review","track id $trackId")
                         if (trackId != null) {
                             navController.navigate(Screen.AddTrackReview.createRoute(trackId))
                             navController.navigate(Screen.Feed.route) {

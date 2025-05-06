@@ -19,7 +19,6 @@ class FeedRepository(
             when (val reviewsResult = reviewRepository.getAllReviews()) {
                 is Result.Success -> processPopularAlbums(reviewsResult.data, limit)
                 is Result.Error -> {
-                    Log.e("FEED_REPO", "Failed to get reviews", reviewsResult.exception)
                     emptyList()
                 }
                 else -> throw IllegalStateException("Unexpected result type")

@@ -14,6 +14,13 @@ class AuthViewModel : ViewModel() {
     private val _userId = MutableStateFlow<String?>(null)
     val userId: StateFlow<String?> = _userId
 
+    private val _themePreference = MutableStateFlow("light")
+    val themePreference: StateFlow<String> = _themePreference
+
+    fun setThemePreference(pref: String) {
+        _themePreference.value = pref
+    }
+
     suspend fun login(username: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         try {
             val querySnapshot = db.collection("users")
@@ -32,7 +39,6 @@ class AuthViewModel : ViewModel() {
             if (storedPassword == password) {
                 _userId.value = userDoc.id
                 Log.d("AuthViewModel", "Login successful for user: $username")
-                Log.d("AuthViewModel", "User ID: ${_userId.value}")
                 onSuccess()
             } else {
                 onFailure("Incorrect password")

@@ -1,6 +1,7 @@
 package com.example.pitchapp.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -28,19 +29,22 @@ import kotlin.math.floor
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import com.example.pitchapp.R
 import com.example.pitchapp.data.model.Review
 import com.example.pitchapp.ui.screens.review.StarRating
 
 @Composable
 fun ReviewCard(
     reviewItem: FeedItem.ReviewItem,
-    onClick: () -> Unit,
+    onClick: ()->Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -50,8 +54,8 @@ fun ReviewCard(
         ),
         modifier = modifier
             .fillMaxWidth()
-            .padding(8.dp)
-        .clickable(onClick = onClick),
+            .padding(8.dp),
+        onClick = onClick,
     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     shape = MaterialTheme.shapes.medium
     ) {
@@ -72,56 +76,73 @@ fun ReviewCard(
                 modifier = Modifier.fillMaxSize()
             )
         } ?: run {
-            Icon(
-                imageVector = Icons.Default.Email,
-                contentDescription = "Review placeholder",
-                modifier = Modifier.fillMaxSize(),
-                tint = MaterialTheme.colorScheme.secondary
+            Image(
+                painter = painterResource(id = R.drawable.record_icon), // Replace with your app logo
+                contentDescription = "App Logo",
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(16.dp))
             )
         }
     }
 
         Spacer(Modifier.width(16.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = reviewItem.review!!.username,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = reviewItem.review.timestamp.toString(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column{
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = reviewItem.review.username,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+
+                    }
+
+                    reviewItem.album?.title?.let { title ->
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    reviewItem.review.albumId.let { name ->
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+
+                        RatingDisplay(
+                            rating = reviewItem.review.rating.toFloat(),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+
+
+                    Text(
+                        text = reviewItem.review.content,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    reviewItem.review.favoriteTrack?.takeIf { it.isNotEmpty() }?.let {
+                        Text(
+                            text = "Favorite Track: $it",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
             }
 
-            reviewItem.album?.title?.let { title ->
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            RatingDisplay(
-                rating = reviewItem.review!!.rating.toFloat(),
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-
-            Text(
-                text = reviewItem.review.content,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-        }
-    }
     }
 }

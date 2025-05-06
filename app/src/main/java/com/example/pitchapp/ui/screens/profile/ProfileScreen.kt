@@ -34,7 +34,8 @@ fun ProfileScreen(
     navController: NavController,
     viewModel: ProfileViewModel,
     profileUserId: String,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    onThemeChanged: () -> Unit
 ) {
     val profileState by viewModel.profileState.collectAsState()
     val userId by authViewModel.userId.collectAsState()
@@ -44,27 +45,32 @@ fun ProfileScreen(
     var editedTheme by remember { mutableStateOf("light") }
 
     if (userId == null) {
-        // Not logged in
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp),
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Welcome to PitchApp!")
+            Text(
+                text = "Welcome to PitchApp!",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(onClick = { navController.navigate("login") }) {
                 Text("Login")
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Button(onClick = { navController.navigate("signup") }) {
                 Text("Create Account")
             }
         }
     } else {
-        // User is logged in, load profile
         LaunchedEffect(userId) {
             viewModel.loadProfile(userId!!)
         }
@@ -80,165 +86,110 @@ fun ProfileScreen(
 
             is ProfileViewModel.ProfileState.Success -> {
                 val profile = state.profile
-                val isOwnProfile = profileUserId == userId
-                val isFollowing = profile.followers.contains(userId)
 
-                // Follow/Unfollow Button
-                if (!isOwnProfile) {
+                LaunchedEffect(profile.themePreference) {
+                    editedTheme = profile.themePreference
+                }
+
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(24.dp)
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp)
                     ) {
-                        Text(profile.displayName, style = MaterialTheme.typography.headlineMedium)
-                        Text("Bio: ${profile.bio ?: "No bio set."}")
-                        Text("Followers: ${profile.followers.size}")
-                        Text("Following: ${profile.following.size}")
-                        Text("Joined in: ${formatTimestamp(profile.createdAt)}")
-                        Text("Songs Rated: ${profile.reviewCount}")
-                        Text("Average Rating: ${"%.1f".format(profile.averageRating)}")
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    if (isFollowing) {
-                                        viewModel.unfollowUser(
-                                            userId!!,
-                                            profileUserId,
-                                            onSuccess = { viewModel.refreshProfile(profileUserId) },
-                                            onFailure = { /* show toast or error */ }
-                                        )
-                                    } else {
-                                        viewModel.followUser(
-                                            userId!!,
-                                            profileUserId,
-                                            onSuccess = { viewModel.refreshProfile(profileUserId) },
-                                            onFailure = { /* show toast or error */ }
-                                        )
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(if (isFollowing) "Unfollow" else "Follow")
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                    if (isOwnProfile) {
-                        LaunchedEffect(profile.themePreference) {
-                            editedTheme = profile.themePreference
-                        }
-                        Column(
-                            modifier = Modifier.fillMaxSize().padding(24.dp)
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Text(
                                 profile.displayName,
                                 style = MaterialTheme.typography.headlineMedium
                             )
-                            Text("Bio: ${profile.bio ?: "No bio set."}")
-                            Text("Followers: ${profile.followers.size}")
-                            Text("Following: ${profile.following.size}")
                             Text("Joined in: ${formatTimestamp(profile.createdAt)}")
                             Text("Songs Rated: ${profile.reviewCount}")
                             Text("Average Rating: ${"%.1f".format(profile.averageRating)}")
                             Text("Theme: ${profile.themePreference.capitalize()}")
-                            Spacer(modifier = Modifier.height(16.dp))
+
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        if (isEditing) {
+                            OutlinedTextField(
+                                value = editedBio,
+                                onValueChange = { if (it.length <= 150) editedBio = it },
+                                label = { Text("Edit Bio") },
+                                maxLines = 3,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Text("${editedBio.length}/150", style = MaterialTheme.typography.labelSmall)
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("Dark Mode")
-                                Spacer(modifier = Modifier.width(8.dp))
                                 Switch(
                                     checked = editedTheme == "dark",
-                                    onCheckedChange = {
-                                        editedTheme = if (it) "dark" else "light"
-                                        coroutineScope.launch {
-                                            viewModel.updateProfile(
-                                                userId = userId!!,
-                                                newBio = profile.bio ?: "",
-                                                newTheme = editedTheme
-                                            )
-                                            viewModel.refreshProfile(userId!!)
-                                        }
+                                    onCheckedChange = { editedTheme = if (it) "dark" else "light" }
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        viewModel.updateProfile(userId!!, editedBio, editedTheme)
+                                        authViewModel.setThemePreference(editedTheme)
+                                        onThemeChanged()
+                                        isEditing = false
+                                        viewModel.refreshProfile(userId!!)
                                     }
-                                )
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Save")
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            if (isEditing) {
-                                OutlinedTextField(
-                                    value = editedBio,
-                                    onValueChange = {
-                                        if (it.length <= 150) editedBio = it
-                                    },
-                                    label = { Text("Edit Bio") },
-                                    maxLines = 3,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Text("${editedBio.length}/150")
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Dark Mode")
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Switch(
-                                        checked = editedTheme == "dark",
-                                        onCheckedChange = {
-                                            editedTheme = if (it) "dark" else "light"
-                                        }
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                Button(
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            viewModel.updateProfile(
-                                                userId = userId!!,
-                                                newBio = editedBio,
-                                                newTheme = editedTheme
-                                            )
-                                            isEditing = false
-                                            viewModel.refreshProfile(userId!!)
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
+                        } else {
+                            profile.bio?.let {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                                 ) {
-                                    Text("Save")
-                                }
-                            } else {
-                                Button(
-                                    onClick = {
-                                        isEditing = true
-                                        editedBio = profile.bio ?: ""
-                                        editedTheme = profile.themePreference
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("Edit Profile")
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text("Bio", style = MaterialTheme.typography.titleMedium)
+                                        Text(it, style = MaterialTheme.typography.bodyMedium)
+                                    }
                                 }
                             }
+                            Button(
+                                onClick = {
+                                    isEditing = true
+                                    editedBio = profile.bio ?: ""
+                                    editedTheme = profile.themePreference
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Edit Profile")
+                            }
+                        }
 
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = { authViewModel.logout() }) {
-                                Text("Logout")
-                            }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(onClick = { authViewModel.logout() }) {
+                            Text("Logout")
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
 
                         LazyColumn {
                             items(profile.reviews) { review ->
-                                FeedItem.ReviewItem(review,review.albumDetails!!)
+                                FeedItem.ReviewItem(review)
                             }
                         }
                     }
 
-                }
             }
         }
     }
 }
-
 
 fun formatTimestamp(timestamp: com.google.firebase.Timestamp): String {
     val date = timestamp.toDate()

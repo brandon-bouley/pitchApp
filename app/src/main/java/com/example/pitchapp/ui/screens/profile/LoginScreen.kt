@@ -56,7 +56,7 @@ fun LoginScreen(
 
             // App Logo
             Image(
-                painter = painterResource(id = R.drawable.logo), // Replace with your app logo
+                painter = painterResource(id = R.drawable.record_icon), // Replace with your app logo
                 contentDescription = "App Logo",
                 modifier = Modifier
                     .size(120.dp)

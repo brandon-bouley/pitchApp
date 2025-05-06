@@ -33,7 +33,7 @@ class FeedViewModel(
                     add(FeedItem.SectionHeader("Recent Reviews"))
                     addAll(
                         recentResult.map { review ->
-                            Log.d("Reviews","review album details: ${review.albumDetails!!}")
+                            Log.d("Reviews","review album details: ${review.albumDetails}")
                             FeedItem.ReviewItem(
                                 review = review,
                                 album = review.albumDetails // Should be populated in repository
