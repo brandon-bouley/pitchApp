@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import com.example.pitchapp.R
+import com.example.pitchapp.ui.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,7 +72,9 @@ fun ResultScreen(navController: NavController, viewModel: SearchViewModel = view
                         is Album -> AlbumCard(
                             albumItem = FeedItem.AlbumItem(item),
                             onClick = {
-                                navController.navigate("album/${item.id}")
+                                navController.navigate(Screen.AlbumDetail.createRoute(item.id)) {
+                                    launchSingleTop = true
+                                }
                             }
                         )
                         else -> Text("Unknown item type")

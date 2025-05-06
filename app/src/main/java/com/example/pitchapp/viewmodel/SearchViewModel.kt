@@ -246,6 +246,19 @@ class SearchViewModel(
         _searchState.update { it.copy(searchType = type) }
     }
 
+    fun softReset() {
+        _searchState.update {
+            it.copy(
+                searchQuery = "",
+                results = emptyList(),
+                error = null,
+                isLoading = false
+            )
+        }
+        _selectedArtist.value = null
+        _artistAlbums.value = emptyList()
+    }
+
     fun resetSearch() {
         _selectedArtist.value = null
         _artistAlbums.value = emptyList()

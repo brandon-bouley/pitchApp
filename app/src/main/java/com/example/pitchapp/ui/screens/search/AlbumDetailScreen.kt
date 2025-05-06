@@ -54,7 +54,9 @@ fun AlbumDetailScreen(
     albumId: String,
     viewModel: AlbumDetailViewModel,
     reviewViewModel: ReviewViewModel,
-    navController: NavController
+
+    navController: NavController,
+
 ) {
     val album = viewModel.albumDetails.value
     val isLoading = viewModel.isLoading.value

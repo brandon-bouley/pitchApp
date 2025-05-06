@@ -10,7 +10,7 @@ import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 
 class TrackReviewRepository {
-    private val db = Firebase.firestore("newPitchDB")
+    private val db = Firebase.firestore
     private val reviewsRef = db.collection("track_reviews")
     private val tracksRef = db.collection("tracks")
 

@@ -56,6 +56,11 @@ class ReviewViewModel(
         )
     }
 
+    fun updateFavoriteTrack(track: String?) {
+        _uiState.value = _uiState.value.copy(favoriteTrack = track)
+    }
+
+
     fun updateReviewText(text: String) {
         _uiState.value = _uiState.value.copy(
             reviewText = text,
@@ -103,7 +108,9 @@ class ReviewViewModel(
                     content = currentState.reviewText,
                     rating = currentState.rating,
                     timestamp = Timestamp.now(),
-                    likes = emptyList()
+                    likes = emptyList(),
+                    albumDetails = currentState.selectedAlbum,
+                    favoriteTrack = currentState.favoriteTrack
                 )
 
                 when (val result = reviewRepository.insertReview(review)) {
@@ -182,7 +189,8 @@ class ReviewViewModel(
         val reviewText: String = "",
         val isSubmitting: Boolean = false,
         val submissionSuccess: Boolean = false,
-        val errorMessage: String? = null
+        val errorMessage: String? = null,
+        val favoriteTrack: String? = null
     ) {
         val isFormValid: Boolean
             get() = selectedAlbum != null &&

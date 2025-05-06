@@ -2,11 +2,13 @@ package com.example.pitchapp.ui.components
 
 import AlbumResultsList
 import ArtistResultsList
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -75,13 +77,18 @@ fun AlbumSearchField(
                             message = searchState.error!!,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
-
-                    else -> ArtistResultsList(
-                        results = searchState.results.filterIsInstance<Artist>(),
-                        onSelect = { viewModel.selectArtist(it) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+            else ->  Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp)
+            ) {
+                ArtistResultsList(
+                    results = searchState.results.filterIsInstance<Artist>(),
+                    onSelect = { viewModel.selectArtist(it) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            }
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -131,14 +138,22 @@ fun AlbumSearchField(
                     }
 
                     else -> {
-                        AlbumResultsList(
-                            albums = artistAlbums,
-                            onSelect = { album ->
-                                viewModel.selectAlbum(album)
-                                onAlbumSelected(album)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp)
+                        ) {
+                            AlbumResultsList(
+                                albums = artistAlbums,
+                                onSelect = { album ->
+                                    viewModel.selectAlbum(album)
+                                    onAlbumSelected(album)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
                     }
                 }
             }

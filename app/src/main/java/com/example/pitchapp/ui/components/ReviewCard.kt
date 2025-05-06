@@ -121,6 +121,15 @@ fun ReviewCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
+
+            reviewItem.review.favoriteTrack?.takeIf { it.isNotEmpty() }?.let {
+                Text(
+                    text = "Favorite Track: $it",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
     }
     }

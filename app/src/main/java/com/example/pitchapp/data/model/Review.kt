@@ -14,7 +14,8 @@ data class Review(
     val timestamp: Timestamp = Timestamp.now(),
     val likes: List<String> = emptyList(), //  user IDs who liked this review
     val likeCount: Int = 0, // Derived field for querying/sorting
-    val albumDetails: Album? = null
+    val albumDetails: Album? = null,
+    val favoriteTrack: String? = null
 ) {
     init {
         require(rating in 0.5f..5.0f) { "Rating must be between 0.5 and 5.0" }
@@ -30,6 +31,8 @@ data class Review(
         "rating" to rating,
         "timestamp" to timestamp,
         "likes" to likes,
-        "likeCount" to likes.size
+        "likeCount" to likes.size,
+        "favoriteTrack" to (favoriteTrack ?: ""),
+        "albumDetails" to (albumDetails ?: Album())
     )
 }

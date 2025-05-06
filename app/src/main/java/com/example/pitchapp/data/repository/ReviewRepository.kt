@@ -129,7 +129,8 @@ class ReviewRepository {
                 rating = getDouble("rating")?.toFloat() ?: 0f,
                 timestamp = getTimestamp("timestamp") ?: Timestamp.now(),
                 likes = get("likes") as? List<String> ?: emptyList(),
-                albumDetails = get("albumDetails") as? Album
+                albumDetails = get("albumDetails") as? Album,
+                favoriteTrack = getString("favoriteTrack")
             )
         } catch (e: Exception) {
             null

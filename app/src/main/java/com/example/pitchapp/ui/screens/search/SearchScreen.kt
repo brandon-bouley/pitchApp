@@ -79,11 +79,15 @@ fun SearchScreen(
 
 @Composable
 private fun CompactSearchLayout(navController: NavController, viewModel: SearchViewModel, reviewViewModel: ReviewViewModel) {
+    LaunchedEffect(Unit) {
+        viewModel.softReset()
+    }
     Column(Modifier.fillMaxSize()) {
         SearchContent(
             viewModel = viewModel,
             onAlbumSelected = { album ->
                 viewModel.onAlbumClicked(navController, album)
+                viewModel.setSearchType(SearchViewModel.SearchType.ALBUM)
             }
         )
     }
@@ -218,12 +222,8 @@ fun SearchField(
     Column(Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = query,
-            onValueChange = {
-                if (searchType == SearchViewModel.SearchType.ALBUM) {
-                    onQueryChange("")
-                    viewModel.setSearchType(SearchViewModel.SearchType.ARTIST)
-                }
-                onQueryChange(it)
+            onValueChange = { newValue ->
+                onQueryChange(newValue)
             },
             label = { Text(when (searchType) {
                 SearchViewModel.SearchType.ARTIST -> "Search artists"
