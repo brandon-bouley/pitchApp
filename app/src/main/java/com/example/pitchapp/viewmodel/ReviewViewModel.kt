@@ -292,9 +292,5 @@ class ReviewViewModel(
                     reviewText.length in 3..500
     }
 
-
-
     private fun Float.roundToNearestHalf(): Float = (this * 2).roundToInt() / 2f
 }
-
-

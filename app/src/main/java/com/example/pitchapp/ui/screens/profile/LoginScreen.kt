@@ -23,15 +23,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.pitchapp.R
-import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.ui.screens.search.SpinningRecord
 import com.example.pitchapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
+import com.example.pitchapp.ui.navigation.Screen
 
 
 
@@ -49,219 +48,222 @@ fun LoginScreen(
     val coroutineScope = rememberCoroutineScope()
     PitchAppTheme {
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // App Logo
-            Image(
-                painter = painterResource(id = R.drawable.record_icon), // Replace with your app logo
-                contentDescription = "App Logo",
+            Column(
                 modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(16.dp))
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // App Title
-            Text(
-                text = "Pitch App",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Text(
-                text = "Sign in to continue",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
-            )
-
-            // Login Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
+                Spacer(modifier = Modifier.height(40.dp))
+
+                // App Logo
+                Image(
+                    painter = painterResource(id = R.drawable.record_icon), // Replace with your app logo
+                    contentDescription = "App Logo",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // App Title
+                Text(
+                    text = "Pitch App",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                    text = "Sign in to continue",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
+                )
+
+                // Login Card
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp)
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    // Username Input
-                    OutlinedTextField(
-                        value = username,
-                        onValueChange = {
-                            username = it
-                            errorMessage = null
-                        },
-                        label = { Text("Username") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next
-                        ),
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(id = android.R.drawable.ic_dialog_email),
-                                contentDescription = "Email Icon",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Password Input
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            errorMessage = null
-                        },
-                        label = { Text("Password") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = if (isPasswordVisible)
-                            VisualTransformation.None else PasswordVisualTransformation(),
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(id = android.R.drawable.ic_lock_idle_lock),
-                                contentDescription = "Password Icon",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (isPasswordVisible)
-                                            android.R.drawable.ic_menu_view
-                                        else
-                                            android.R.drawable.ic_menu_close_clear_cancel
-                                    ),
-                                    contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    )
-
-
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Login Button
-                    Button(
-                        colors = ButtonDefaults.buttonColors(containerColor =MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
-                        onClick = {
-                            if (username.isBlank() || password.isBlank()) {
-                                errorMessage = "Please enter both username and password"
-                                return@Button
-                            }
-
-
-                            isLoading = true
-                            coroutineScope.launch {
-                                authViewModel.login(username, password,
-                                    onSuccess = {
-                                        isLoading = false
-                                        navController.navigate(Screen.Feed.route) {
-                                            popUpTo(0) { inclusive = true }
-                                            launchSingleTop = true
-                                        }
-                                    },
-                                    onFailure = { error ->
-                                        isLoading = false
-                                        errorMessage = error
-                                    }
-                                )
-                            }
-                        },
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        enabled = !isLoading
+                            .padding(24.dp)
                     ) {
-                        if (isLoading) {
-                            SpinningRecord()
-                        } else {
-                            Text(
-                                "LOGIN",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                        // Username Input
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = {
+                                username = it
+                                errorMessage = null
+                            },
+                            label = { Text("Username") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                imeAction = ImeAction.Next
+                            ),
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = android.R.drawable.ic_dialog_email),
+                                    contentDescription = "Email Icon",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        )
 
-                    // Error Message
-                    AnimatedVisibility(
-                        visible = errorMessage != null,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        errorMessage?.let {
-                            Text(
-                                text = it,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 16.dp)
-                            )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Password Input
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = {
+                                password = it
+                                errorMessage = null
+                            },
+                            label = { Text("Password") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            visualTransformation = if (isPasswordVisible)
+                                VisualTransformation.None else PasswordVisualTransformation(),
+                            shape = RoundedCornerShape(12.dp),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Done
+                            ),
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = android.R.drawable.ic_lock_idle_lock),
+                                    contentDescription = "Password Icon",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (isPasswordVisible)
+                                                android.R.drawable.ic_menu_view
+                                            else
+                                                android.R.drawable.ic_menu_close_clear_cancel
+                                        ),
+                                        contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        )
+
+
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Login Button
+                        Button(
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            onClick = {
+                                if (username.isBlank() || password.isBlank()) {
+                                    errorMessage = "Please enter both username and password"
+                                    return@Button
+                                }
+
+
+                                isLoading = true
+                                coroutineScope.launch {
+                                    authViewModel.login(username, password,
+                                        onSuccess = {
+                                            isLoading = false
+                                            navController.navigate(Screen.Feed.route) {
+                                                popUpTo(0) { inclusive = true }
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        onFailure = { error ->
+                                            isLoading = false
+                                            errorMessage = error
+                                        }
+                                    )
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            enabled = !isLoading
+                        ) {
+                            if (isLoading) {
+                                SpinningRecord()
+                            } else {
+                                Text(
+                                    "LOGIN",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        // Error Message
+                        AnimatedVisibility(
+                            visible = errorMessage != null,
+                            enter = fadeIn(),
+                            exit = fadeOut()
+                        ) {
+                            errorMessage?.let {
+                                Text(
+                                    text = it,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 16.dp)
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.weight(1f))
 
-            // Sign Up Option
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "Don't have an account?",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                TextButton(onClick = { navController.navigate("signup") }) {
+                // Sign Up Option
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        "Sign Up",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        "Don't have an account?",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    TextButton(onClick = { navController.navigate("signup") }) {
+                        Text(
+                            "Sign Up",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }
     }
-        }
 }

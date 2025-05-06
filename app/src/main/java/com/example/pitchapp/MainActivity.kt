@@ -46,19 +46,25 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlin.random.Random
-import android.hardware.Sensor
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
+
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
+import android.hardware.Sensor
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.pitchapp.ui.components.ShakeDetector
-import com.example.pitchapp.ui.navigation.Screen
 import com.example.pitchapp.ui.screens.profile.LoginScreen
 import com.example.pitchapp.ui.screens.profile.SignUpScreen
 
 
 class ProfileViewModelFactory(
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val musicRepository: MusicRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(
@@ -67,9 +73,13 @@ class ProfileViewModelFactory(
     ): T {
         return ProfileViewModel(
             repository = profileRepository,
+            musicRepository = musicRepository
         ) as T
     }
 }
+
+
+
 
 
 
@@ -92,6 +102,7 @@ class ReviewViewModelFactory(
     private val reviewRepository: ReviewRepository,
     private val authViewModel: AuthViewModel
 ) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ReviewViewModel::class.java)) {
             return ReviewViewModel(reviewRepository, authViewModel) as T
@@ -141,10 +152,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        FirebaseApp.initializeApp(this)
         // Dependency setup
         val api = LastFmApi.service
         val musicRepository = MusicRepository(api)
+
+        FirebaseFirestore.getInstance().enableNetwork()
 
 
         // Repository initialization
@@ -153,12 +165,12 @@ class MainActivity : ComponentActivity() {
             reviewRepository = reviewRepository,
             musicRepository = musicRepository,
         )
-        val profileRepository = ProfileRepository()
+        val profileRepository = ProfileRepository(reviewRepository)
 
         // ViewModel factories
         val feedViewModelFactory = FeedViewModelFactory(feedRepository)
         val searchViewModelFactory = SearchViewModelFactory(musicRepository, reviewRepository)
-        val profileViewModelFactory = ProfileViewModelFactory(profileRepository)
+        val profileViewModelFactory = ProfileViewModelFactory(profileRepository, musicRepository)
         onShake = {}
         shakeDetector = ShakeDetector { onShake() }
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
@@ -173,13 +185,15 @@ class MainActivity : ComponentActivity() {
                     val tracks = musicRepository.getTopTracks()
                     if (tracks.isNotEmpty()) {
                         val randomTrack = tracks[Random.nextInt(tracks.size)]
-                        selectedTrack = randomTrack
+                       selectedTrack = randomTrack
                         showDialog = true
                     }
                 }
 
             }
+
             if (showDialog) {
+
                 AlertDialog(
                     onDismissRequest = { showDialog = false },
                     title = { Text("Random Track 🎵") },
@@ -219,7 +233,7 @@ class MainActivity : ComponentActivity() {
                     },
                     confirmButton = {
                         Row {
-                            TextButton(onClick = { showDialog = false }) {
+                            TextButton(onClick = {showDialog = false }) {
                                 Text("Close")
                             }
                             Spacer(modifier = Modifier.width(16.dp))
@@ -285,8 +299,6 @@ private fun FirebaseAuthHandler(
 ) {
     val context = LocalContext.current
     val authViewModel: AuthViewModel = viewModel()
-
-
     val authState by authViewModel.userId.collectAsState()
 
     // Create auth-only NavController
@@ -347,7 +359,8 @@ private fun FirebaseAuthHandler(
                     profileViewModelFactory = profileViewModelFactory,
                     selectedTrack = selectedTrack,
                     shouldReviewTrack = shouldReviewTrack,
-                    onReviewComplete = onReviewComplete
+                    onReviewComplete = onReviewComplete,
+                    authNavController = authNavController
                 )
             }
         }
@@ -364,8 +377,20 @@ private fun AppEntry(
     profileViewModelFactory: ProfileViewModelFactory,
     selectedTrack: RandomTrack?,
     shouldReviewTrack: Boolean,
-    onReviewComplete: () -> Unit
+    onReviewComplete: () -> Unit,
+    authNavController: NavHostController
 ) {
+
+    val authState by authViewModel.userId.collectAsState()
+
+    LaunchedEffect(authState) {
+        if (authState == null) {
+            // Handle logout by navigating back to auth flow
+            authNavController.navigate("auth") {
+                popUpTo("main_app") { inclusive = true }
+            }
+        }
+    }
     // Create main app NavController
     val navController = rememberNavController()
     val reviewViewModelFactory = remember(reviewRepository, authViewModel) {
@@ -399,6 +424,8 @@ private fun AppEntry(
                 content = content
             )
         }
+
+
 
 
 

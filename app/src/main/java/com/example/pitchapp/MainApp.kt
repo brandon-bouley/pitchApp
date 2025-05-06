@@ -171,12 +171,12 @@ fun MainApp(
                         )
                     }
 
-                composable(Screen.Results.route) {
-                    ResultScreen(
-                        navController = navController,
-                        viewModel = viewModel(factory = searchViewModelFactory)
-                    )
-                }
+                    composable(Screen.Results.route) {
+                        ResultScreen(
+                            navController = navController,
+                            viewModel = searchViewModel,
+                        )
+                    }
 
                     composable(
                         route = Screen.AddReview.route,
@@ -223,6 +223,7 @@ fun MainApp(
                     ProfileScreen(
                         navController = navController,
                         viewModel = profileViewModel,
+                        reviewRepository = reviewRepository,
                         authViewModel = authViewModel
                     )
                 }
@@ -251,5 +252,7 @@ fun MainApp(
                 }
             }
         }
+
     }
 }
+

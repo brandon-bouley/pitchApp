@@ -3,6 +3,10 @@ package com.example.pitchapp.data.repository
 import android.util.Log
 import com.example.pitchapp.data.model.Album
 import com.example.pitchapp.data.model.Profile
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.tasks.await
+import com.example.pitchapp.data.model.Result
 import com.example.pitchapp.data.model.Review
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
@@ -10,7 +14,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
-class ProfileRepository {
+class ProfileRepository(private val reviewRepository: ReviewRepository) {
     private val db = FirebaseFirestore.getInstance()
     private val TAG = "ProfileRepository"
 
@@ -54,13 +58,19 @@ class ProfileRepository {
             )
 
             // Get reviews
-            val reviews = getReviews(userId)
+            val reviews = when (val reviewsResult = reviewRepository.getReviewsByUser(userId)) {
+                is Result.Success -> reviewsResult.data
+                is Result.Error -> {
+                    Log.e(TAG, "Error fetching reviews: ${reviewsResult.exception.message}")
+                    emptyList()
+                }
+            }
 
-            // Return complete profile
             return profile.copy(
-                recentReviews = reviews,
+                recentReviews = reviews.takeIf { it.isNotEmpty() } ?: getReviewsFromUserDocument(userId),
                 reviewCount = reviews.size
             )
+
         } catch (e: Exception) {
             Log.e(TAG, "Error getting profile", e)
             throw e
@@ -87,7 +97,7 @@ class ProfileRepository {
                     val rating = doc.getDouble("rating")?.toFloat()
                     val timestamp = doc.getTimestamp("timestamp")
 
-                    var review = Review(
+                    val review = Review(
                                         id = reviewId,
                                         userId = userId,
                                         albumId = albumId?: "",
@@ -137,29 +147,80 @@ class ProfileRepository {
 
     suspend fun getProfileByUsername(username: String): Profile {
         try {
-            Log.d(TAG, "Getting profile for username: $username")
-            // Query users collection by username
-            val query = db.collection("users")
+            // Query for the user document by username
+            val userQuery = db.collection("users")
                 .whereEqualTo("username", username)
                 .limit(1)
                 .get()
                 .await()
 
-            if (query.isEmpty) {
-                Log.w(TAG, "No user found with username: $username")
+            if (userQuery.isEmpty) {
                 throw Exception("User not found")
             }
 
-            val userDoc = query.documents[0]
+            val userDoc = userQuery.documents[0]
             val userId = userDoc.id
 
-            // Use the existing getProfile method to get the full profile
-            return getProfile(userId)
+            // Extract profile data
+            val profileData = userDoc.data ?: throw Exception("User data is empty")
+
+            // Parse recent reviews
+            val recentReviews = mutableListOf<Review>()
+            val reviewsData = profileData["recentReviews"] as? List<Map<String, Any>> ?: emptyList()
+
+            Log.d(TAG, "Found ${reviewsData.size} reviews for user $username")
+
+            for (reviewData in reviewsData) {
+                try {
+                    // Extract album details from the review data
+                    val albumDetailsMap = reviewData["albumDetails"] as? Map<String, Any>
+
+                    // Create the review object
+                    val review = Review(
+                        id = reviewData["id"] as? String ?: "",
+                        userId = reviewData["userId"] as? String ?: "",
+                        username = reviewData["username"] as? String ?: "",
+                        albumId = reviewData["albumId"] as? String ?: "",
+                        content = reviewData["content"] as? String ?: "",
+                        rating = (reviewData["rating"] as? Number)?.toFloat() ?: 0.0f,
+                        timestamp = reviewData["timestamp"] as? Timestamp ?: Timestamp.now(),
+                        likes = (reviewData["likes"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                        favoriteTrack = reviewData["favoriteTrack"] as? String,
+                        // If albumDetails is present in the review, parse it
+                        albumDetails = albumDetailsMap?.let {
+                            com.example.pitchapp.data.model.Album(
+                                id = it["id"] as? String ?: "",
+                                title = it["title"] as? String ?: "Unknown Album",
+                                artist = it["artist"] as? String ?: "Unknown Artist",
+                                artworkUrl = it["artworkUrl"] as? String ?: ""
+                            )
+                        }
+                    )
+
+                    recentReviews.add(review)
+                    Log.d(TAG, "Added review: ${review.id} for album: ${review.albumId}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing review: ${e.message}")
+                }
+            }
+
+            // Build full profile
+            return Profile(
+                userId = userId,
+                username = profileData["username"] as? String ?: "",
+                bio = profileData["bio"] as? String,
+                profilePictureUrl = profileData["profilePictureUrl"] as? String ?: "",
+                followers = (profileData["followers"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                following = (profileData["following"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                reviewCount = recentReviews.size,
+                recentReviews = recentReviews
+            )
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting profile by username", e)
+            Log.e(TAG, "Error getting profile: ${e.message}", e)
             throw e
         }
     }
+
 
     suspend fun searchUsers(query: String): List<Profile> {
         if (query.length < 2) return emptyList()
@@ -275,4 +336,37 @@ class ProfileRepository {
             throw e
         }
     }
+
+    private suspend fun getReviewsFromUserDocument(userId: String): List<Review> {
+        val userDoc = db.collection("users").document(userId).get().await()
+        val reviewsData = userDoc.get("recentReviews") as? List<Map<String, Any>> ?: emptyList()
+
+        return reviewsData.mapNotNull { data ->
+            try {
+                Review(
+                    id = data["id"] as? String ?: "",
+                    albumId = data["albumId"] as? String ?: "",
+                    userId = data["userId"] as? String ?: "",
+                    username = data["username"] as? String ?: "Anonymous",
+                    content = data["content"] as? String ?: "",
+                    rating = (data["rating"] as? Double)?.toFloat() ?: 0f,
+                    timestamp = data["timestamp"] as? Timestamp ?: Timestamp.now(),
+                    likes = (data["likes"] as? List<String>) ?: emptyList(),
+                    albumDetails = (data["albumDetails"] as? Map<String, Any>)?.let { albumMap ->
+                        Album(
+                            id = albumMap["id"] as? String ?: "",
+                            title = albumMap["title"] as? String ?: "",
+                            artist = albumMap["artist"] as? String ?: "",
+                            artworkUrl = albumMap["artworkUrl"] as? String ?: ""
+                        )
+                    },
+                    favoriteTrack = data["favoriteTrack"] as? String
+                )
+            } catch (e: Exception) {
+                Log.e("ReviewConversion", "Error converting map to Review", e)
+                null
+            }
+        }
+    }
+
 }

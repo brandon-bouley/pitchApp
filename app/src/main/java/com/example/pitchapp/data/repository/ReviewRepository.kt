@@ -10,6 +10,7 @@ import com.google.firebase.firestore.QuerySnapshot
 import com.example.pitchapp.data.model.Result
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 
 class ReviewRepository {
     private val db = Firebase.firestore
@@ -17,13 +18,22 @@ class ReviewRepository {
     private val albumsRef = db.collection("albums")
     private val tracksRef = db.collection("tracks")
 
-
     //inserts reviews to the database
     suspend fun insertReview(review: Review): Result<Unit> {
         return try {
             val document = reviewsRef.document()
             val data = review.copy(id = document.id).toFirestoreMap()
             document.set(data).await()
+            val doc = reviewsRef.document()
+
+            // Write review to reviews collection
+            doc.set(data).await()
+
+            // Add to user's recentReviews (keep only last 5)
+            db.collection("users").document(review.userId)
+                .update("recentReviews", FieldValue.arrayUnion(data))
+                .await()
+
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e)
@@ -71,7 +81,6 @@ class ReviewRepository {
             Result.Error(e)
         }
     }
-    //Returns all the reviews for a Track
     suspend fun getReviewsForTrack(trackId: String): Result<List<Review>> {
         return try {
             val querySnapshot = reviewsRef
@@ -85,7 +94,7 @@ class ReviewRepository {
             Result.Error(e)
         }
     }
-//Used in the feed screen to display recent reviews
+
     suspend fun getRecentReviews(limit: Int = 50): Result<List<Review>> {
         return try {
             val querySnapshot = reviewsRef
@@ -148,6 +157,8 @@ class ReviewRepository {
     // Helper extension to convert QuerySnapshot to Review list
     private fun DocumentSnapshot.toReview(): Review? {
         return try {
+            val albumDetailsMap = get("albumDetails") as? Map<String, Any>
+
             Review(
                 id = id,
                 albumId = getString("albumId") ?: "",
@@ -157,7 +168,14 @@ class ReviewRepository {
                 rating = getDouble("rating")?.toFloat() ?: 0f,
                 timestamp = getTimestamp("timestamp") ?: Timestamp.now(),
                 likes = get("likes") as? List<String> ?: emptyList(),
-                albumDetails = get("albumDetails") as? Album,
+                albumDetails = albumDetailsMap?.let { map ->
+                    Album(
+                        id = map["id"] as? String ?: "",
+                        title = map["title"] as? String ?: "",
+                        artist = map["artist"] as? String ?: "",
+                        artworkUrl = map["artworkUrl"] as? String ?: ""
+                    )
+                },
                 favoriteTrack = getString("favoriteTrack")
             )
         } catch (e: Exception) {
